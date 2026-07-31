@@ -1,0 +1,11 @@
+{
+  "rows": 15273048,
+  "cells_total": 832,
+  "cells_with_data": 832,
+  "tracks": [
+    "track_a",
+    "track_b"
+  ],
+  "elapsed_s": 1341.1,
+  "finished_at": "2026-07-26T13:06:35.757116+00:00"
+}

@@ -1,0 +1,80 @@
+# Experiment matrix for the extremes verification paper.
+#
+# Model attributes are the explanatory axes for the (exploratory) attribution
+# analysis. No axis is presupposed to explain tail skill: the pilot probe
+# already showed an MSE-trained model (ept2_reasoning) beating IFS in every
+# observed-value bucket, so "MSE => tail collapse" is a hypothesis under test,
+# not an assumption. `output` (ensemble vs deterministic) is verified
+# empirically in the inventory via the CRPS==MAE test.
+
+models:
+  ept2_1_europa:    {family: jua,      training: diffusion,   output: ensemble,      domain: regional}
+  ept2_hrrr:        {family: jua,      training: diffusion,   output: ensemble,      domain: regional}
+  ept2_e:           {family: jua,      training: regression,  output: ensemble,      domain: global}
+  ept2_reasoning:   {family: jua,      training: regression,  output: deterministic, domain: global}
+  aifs:             {family: external, training: regression,  output: deterministic, domain: global}
+  aurora:           {family: external, training: regression,  output: deterministic, domain: global}
+  ecmwf_ifs_single: {family: physics,  training: physics,     output: deterministic, domain: global}
+  noaa_gfs_single:  {family: physics,  training: physics,     output: deterministic, domain: global}
+  icon_global:      {family: physics,  training: physics,     output: deterministic, domain: global}
+  icon_eu:          {family: physics,  training: physics,     output: deterministic, domain: regional}
+  ecmwf_ens:        {family: physics,  training: physics,     output: ensemble,      domain: global}
+
+reference_model: ecmwf_ifs_single
+
+tracks:
+  # Global-generation track: longest common window across the global set.
+  track_a:
+    start: "2025-09-01T00:00:00Z"
+    end: "2026-07-01T00:00:00Z"
+    max_lead_hours: 240
+    models:
+      - ept2_1_europa
+      - ept2_hrrr
+      - ept2_e
+      - ept2_reasoning
+      - aifs
+      - aurora
+      - ecmwf_ifs_single
+      - noaa_gfs_single
+      - icon_global
+      - ecmwf_ens
+  # Regional showdown: diffusion regionals vs ICON-EU on its home domain.
+  # March–June keeps four full months after ICON-EU is available and adds
+  # denser spring/early-summer solar.
+  track_b:
+    start: "2026-03-01T00:00:00Z"
+    end: "2026-07-01T00:00:00Z"
+    max_lead_hours: 120
+    models:
+      - ept2_1_europa
+      - ept2_hrrr
+      - icon_eu
+      - ecmwf_ifs_single
+      - ecmwf_ens
+
+# "NO" must stay quoted: bare NO is YAML-1.1 boolean false.
+countries: [DE, FR, GB, ES, IT, PL, NL, BE, CH, "NO", AT, CZ, DK]
+
+variables:
+  - wind_speed_at_height_level_10m
+  - air_temperature_at_height_level_2m
+
+# rmse/mae/bias always; crps added automatically for ensemble-output models.
+metrics: [rmse, mae, bias]
+
+debias: [true, false]
+
+# Monthly replicates provide uncertainty (resampling over months) and the
+# seasonal stratification. Month thresholds are month-relative extremes.
+months:
+  - ["2025-09-01", "2025-10-01"]
+  - ["2025-10-01", "2025-11-01"]
+  - ["2025-11-01", "2025-12-01"]
+  - ["2025-12-01", "2026-01-01"]
+  - ["2026-01-01", "2026-02-01"]
+  - ["2026-02-01", "2026-03-01"]
+  - ["2026-03-01", "2026-04-01"]
+  - ["2026-04-01", "2026-05-01"]
+  - ["2026-05-01", "2026-06-01"]
+  - ["2026-06-01", "2026-07-01"]

@@ -1,0 +1,30 @@
+__pycache__/
+*.pyc
+.venv/
+data/cache/
+# Raw per-country metric tables and observation panels: regenerable from the
+# API / public providers, shipped as release assets rather than in-tree.
+data/derived/bucketed_metrics*.parquet
+data/derived/solar_metrics_country*.parquet
+data/derived/precip_obs_hourly.parquet
+data/derived/precip_obs_stations.parquet
+# Raw station-point precipitation forecasts (~2 GB): regenerable from the query
+# engine via scripts/extract_precip_forecasts.py.
+data/derived/precip_forecasts/
+data/derived/precip_model_station_coverage.parquet
+logs/
+# ERA5 1991-2020 station thresholds (208 MB): regenerable from ClickHouse via
+# scripts/extract_climatology_thresholds.py.
+data/derived/station_climatology_thresholds_era5_1991_2020.parquet
+# ERA5 1991-2020 wet-hour precipitation thresholds (353 MB) and the small
+# interpolation intermediates: regenerable from ClickHouse via
+# scripts/extract_precip_thresholds.py. precip_categorical.parquet is kept
+# in-tree (backs the categorical figure/table and paper numbers).
+data/derived/station_precip_thresholds_era5_1991_2020.parquet
+data/derived/era5_grid_europe.parquet
+data/derived/precip_station_era5_weights.parquet
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+.DS_Store

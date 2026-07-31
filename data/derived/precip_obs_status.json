@@ -1,0 +1,72 @@
+{
+  "window": {
+    "start": "2025-09-01T00:00:00+00:00",
+    "end": "2026-07-01T00:00:00+00:00"
+  },
+  "sources": [
+    "ghcnh",
+    "dwd",
+    "meteofrance"
+  ],
+  "stations": 4005,
+  "rows": 25099406,
+  "dropped_above_max_hourly_mm": 40,
+  "by_country": [
+    {
+      "country": "AT",
+      "stations": 147,
+      "rows": 222289
+    },
+    {
+      "country": "BE",
+      "stations": 15,
+      "rows": 40127
+    },
+    {
+      "country": "CH",
+      "stations": 127,
+      "rows": 668453
+    },
+    {
+      "country": "CZ",
+      "stations": 34,
+      "rows": 188518
+    },
+    {
+      "country": "DE",
+      "stations": 1350,
+      "rows": 9741080
+    },
+    {
+      "country": "DK",
+      "stations": 6,
+      "rows": 14416
+    },
+    {
+      "country": "ES",
+      "stations": 197,
+      "rows": 230089
+    },
+    {
+      "country": "FR",
+      "stations": 1774,
+      "rows": 12769998
+    },
+    {
+      "country": "GB",
+      "stations": 116,
+      "rows": 628215
+    },
+    {
+      "country": "NL",
+      "stations": 34,
+      "rows": 108905
+    },
+    {
+      "country": "NO",
+      "stations": 205,
+      "rows": 487316
+    }
+  ],
+  "finished_at": "2026-07-26T12:35:28.779205+00:00"
+}
