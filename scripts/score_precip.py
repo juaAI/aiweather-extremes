@@ -58,6 +58,11 @@ DEBIAS_WEEKS = 4
 # than the symmetric lt_q5..gt_q95 of the unbounded variables.
 REGIME_ORDER = ["dry", "wet_lt_p50", "p50_p75", "p75_p95", "gt_p95"]
 
+# Scoring cohorts. Track B additionally scores ecmwf_ens for reference, but
+# the Track B presentation cohort (paper figures, tables, web export) is
+# regional-only: ept2_1_europa, ept2_hrrr, icon_eu vs the IFS reference.
+# ENS is a global ensemble and is deliberately excluded from every Track B
+# presentation; see config/matrix.yaml.
 TRACK_MODELS = {
     "track_a": [
         "ecmwf_ens",

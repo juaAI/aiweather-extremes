@@ -9,6 +9,10 @@ from style import PRECIP, SOLAR
 REPO = Path(__file__).resolve().parents[1]
 DERIVED = REPO / "data" / "derived"
 LEADS = {"lead_1": 1, "lead_6": 6, "lead_12": 12, "lead_24": 24, "lead_48": 48}
+# The six climatological regimes; the extraction also emits an 'unclassified'
+# solar bucket (hours without a valid threshold) that no figure or export uses.
+STANDARD_BUCKETS = ["all", "lt_q5", "q5_q25", "q25_q75", "q75_q95", "gt_q95"]
+_MERGE_KEYS = ["variable", "model", "lead_scope"]
 
 
 def main() -> None:
@@ -22,6 +26,7 @@ def main() -> None:
                 & (pl.col("kind") == "skill_pct")
                 & (pl.col("variable") != PRECIP)
                 & pl.col("lead_scope").is_in(["h6_48", "h1_48", "h1_12"])
+                & pl.col("obs_bucket").is_in(STANDARD_BUCKETS)
             )
             .select(
                 "variable",
@@ -32,16 +37,56 @@ def main() -> None:
                 "skill_se",
                 pl.col("n_samples").alias("n"),
                 "n_months",
+                "n_leads",
+                "grid_leads",
             )
         )
         # All-condition Track A rows are definition-independent. Preserve the
-        # released rows, including their historical monthly-jackknife snapshot.
+        # released rows (historical monthly-jackknife snapshot) where they
+        # exist, but keep the climatology run's all-condition rows for
+        # (variable, model, scope) combos the release never covered
+        # (h1_48 wind/temp, h6_48 solar) so no scope ships regime rows
+        # without their all-condition counterpart.
         canonical = DERIVED / f"headline_skill_{track}.parquet"
         if track == "track_a" and canonical.exists():
+            released = pl.read_parquet(canonical).filter(
+                pl.col("obs_bucket") == "all"
+            )
+            coverage = headline.select(
+                *_MERGE_KEYS, "n_leads", "grid_leads"
+            ).unique(subset=_MERGE_KEYS)
+            released = released.join(coverage, on=_MERGE_KEYS, how="left")
+            # ECMWF ENS appears in the released 1-12 h companion (all
+            # conditions only) but is excluded from hourly scopes by the
+            # aggregate coverage rule, so no coverage row exists: its
+            # 6-hourly cadence natively supplies leads 6 and 12 of the
+            # twelve-hour grid.
+            released = released.with_columns(
+                pl.when(
+                    (pl.col("model") == "ecmwf_ens")
+                    & (pl.col("lead_scope") == "h1_12")
+                    & pl.col("n_leads").is_null()
+                )
+                .then(pl.lit(2))
+                .otherwise(pl.col("n_leads"))
+                .alias("n_leads"),
+                pl.when(
+                    (pl.col("model") == "ecmwf_ens")
+                    & (pl.col("lead_scope") == "h1_12")
+                    & pl.col("grid_leads").is_null()
+                )
+                .then(pl.lit(12))
+                .otherwise(pl.col("grid_leads"))
+                .alias("grid_leads"),
+            ).select(headline.columns)
+            fresh_all = headline.filter(pl.col("obs_bucket") == "all").join(
+                released.select(_MERGE_KEYS), on=_MERGE_KEYS, how="anti"
+            )
             headline = pl.concat(
                 [
                     headline.filter(pl.col("obs_bucket") != "all"),
-                    pl.read_parquet(canonical).filter(pl.col("obs_bucket") == "all"),
+                    fresh_all,
+                    released,
                 ]
             )
         headline = headline.sort("variable", "lead_scope", "obs_bucket", "model")

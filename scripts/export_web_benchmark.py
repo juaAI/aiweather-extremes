@@ -16,6 +16,7 @@ import argparse
 import json
 import math
 import subprocess
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,9 @@ import polars as pl
 REPO = Path(__file__).resolve().parents[1]
 DERIVED = REPO / "data" / "derived"
 
+WIND = "wind_speed_at_height_level_10m"
+TEMP = "air_temperature_at_height_level_2m"
+SOLAR = "surface_downwelling_shortwave_flux_sum_1h"
 PRECIP = "precipitation_amount_sum_1h"
 
 MODELS = [
@@ -184,6 +188,94 @@ COUNTRIES = [
 ]
 
 
+HOURLY_SCOPES = {"h1_48", "h1_12"}
+
+# Track B presentation cohort (regional showdown; see config/matrix.yaml).
+# ECMWF ENS is scored for reference but deliberately excluded: it is a global
+# ensemble, not a regional model.
+TRACK_B_COHORT = {"ept2_1_europa", "ept2_hrrr", "icon_eu", "ept2_1_helios"}
+
+_REASON_SOLAR_SPECIALIST = (
+    "Solar-specialised model; evaluated on solar radiation only."
+)
+_REASON_NO_SOLAR = "No usable solar output."
+_REASON_NO_PRECIP = "No precipitation output."
+_REASON_SIX_HOURLY = "6-hourly native output; hourly grids are not covered."
+_REASON_ENS_PRECIP = (
+    "Scored on its native 6-hourly cadence; shown under the 6–48 h horizon."
+)
+_REASON_REGIONAL_ONLY = "Regional model; evaluated in the regional study."
+_REASON_NOT_REGIONAL = (
+    "Not part of the regional cohort; see the primary benchmark."
+)
+_REASON_ENS_NOT_REGIONAL = (
+    "Global ensemble; excluded from the regional cohort by design."
+)
+_REASON_NOT_COUNTRY = "Not part of the country-profile model set."
+_REASON_ENS_H1_12_TAILS = (
+    "Reported for all conditions only on the 1–12 h grid: just two native "
+    "leads (6 h and 12 h) fall in this window, too few for regime splits."
+)
+
+
+def omission_reason(
+    track: str, variable: str, scope: str, model: str
+) -> str | None:
+    """Why `model` has no records for (track, variable, scope).
+
+    Returns None for unexplained absences, which the exporter treats as an
+    error: every hole in the published dataset must be a documented design
+    decision, not an accident.
+    """
+    if track == "track_a":
+        if model == "icon_eu":
+            return _REASON_REGIONAL_ONLY
+        if model == "ept2_1_helios" and variable != SOLAR:
+            return _REASON_SOLAR_SPECIALIST
+        if model in ("aifs", "aurora"):
+            if variable == SOLAR:
+                return _REASON_NO_SOLAR
+            if variable == PRECIP:
+                return _REASON_NO_PRECIP
+            if scope in HOURLY_SCOPES:
+                return _REASON_SIX_HOURLY
+        if model == "ecmwf_ens":
+            if variable == SOLAR:
+                return _REASON_NO_SOLAR
+            if variable == PRECIP and scope in HOURLY_SCOPES:
+                return _REASON_ENS_PRECIP
+            if scope == "h1_48":
+                return _REASON_SIX_HOURLY
+        return None
+    if track == "track_b":
+        if model == "ecmwf_ens":
+            return _REASON_ENS_NOT_REGIONAL
+        if model == "ept2_1_helios" and variable != SOLAR:
+            return _REASON_SOLAR_SPECIALIST
+        if model not in TRACK_B_COHORT:
+            return _REASON_NOT_REGIONAL
+        return None
+    if track == "country_profiles":
+        if model == "ept2_1_helios" and variable != SOLAR:
+            return _REASON_SOLAR_SPECIALIST
+        return _REASON_NOT_COUNTRY
+    return None
+
+
+def partial_reason(
+    track: str, variable: str, scope: str, model: str
+) -> str | None:
+    """Why `model` has only an all-conditions record for this combo."""
+    if (
+        track == "track_a"
+        and model == "ecmwf_ens"
+        and scope == "h1_12"
+        and variable in (WIND, TEMP)
+    ):
+        return _REASON_ENS_H1_12_TAILS
+    return None
+
+
 def finite(value: Any) -> float | int | None:
     if value is None:
         return None
@@ -220,6 +312,8 @@ def pooled_records() -> list[dict[str, Any]]:
                     "skill": finite(record["skill"]),
                     "se": finite(record["skill_se"]),
                     "n": finite(record["n"]),
+                    "nLeads": finite(record["n_leads"]),
+                    "gridLeads": finite(record["grid_leads"]),
                 }
             )
 
@@ -228,9 +322,13 @@ def pooled_records() -> list[dict[str, Any]]:
         & (pl.col("kind") == "skill_pct")
         & pl.col("debias")
         & pl.col("country").is_null()
-        & pl.col("lead_scope").is_in(["h1_48", "h1_12"])
+        & pl.col("lead_scope").is_in(["h6_48", "h1_48", "h1_12"])
     )
     for record in precip.iter_rows(named=True):
+        # ENS is scored in Track B for reference but the regional
+        # presentation cohort deliberately excludes it (config/matrix.yaml).
+        if record["track"] == "track_b" and record["model"] == "ecmwf_ens":
+            continue
         rows.append(
             {
                 "view": "pooled",
@@ -242,6 +340,8 @@ def pooled_records() -> list[dict[str, Any]]:
                 "skill": finite(record["value"]),
                 "se": finite(record["skill_se"]),
                 "n": finite(record["n_samples"]),
+                "nLeads": finite(record["n_leads"]),
+                "gridLeads": finite(record["grid_leads"]),
             }
         )
     return rows
@@ -266,6 +366,62 @@ def country_records() -> list[dict[str, Any]]:
         }
         for record in frame.iter_rows(named=True)
     ]
+
+
+def build_omissions(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Explicit reasons for every model hole in the exported dataset.
+
+    Emits one entry per (track, variable, scope, model) with no records at
+    all, plus partial entries (``regimes: "tails"``) where a model ships only
+    its all-conditions value. Raises if any absence lacks a documented
+    reason so accidental data drops cannot ship silently.
+    """
+    model_keys = [model["key"] for model in MODELS]
+    present: dict[tuple[str, str, str], dict[str, set[str]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
+    for row in records:
+        key = (row["track"], row["variable"], row["scope"])
+        present[key][row["model"]].add(row["regime"])
+
+    omissions: list[dict[str, Any]] = []
+    for (track, variable, scope), models in sorted(present.items()):
+        combo_regimes = set().union(*models.values())
+        for model in model_keys:
+            if model not in models:
+                reason = omission_reason(track, variable, scope, model)
+                if reason is None:
+                    raise SystemExit(
+                        "unexplained omission: "
+                        f"{track}/{variable}/{scope}/{model}"
+                    )
+                omissions.append(
+                    {
+                        "track": track,
+                        "variable": variable,
+                        "scope": scope,
+                        "model": model,
+                        "reason": reason,
+                    }
+                )
+            elif models[model] == {"all"} and len(combo_regimes) > 1:
+                reason = partial_reason(track, variable, scope, model)
+                if reason is None:
+                    raise SystemExit(
+                        "unexplained partial coverage: "
+                        f"{track}/{variable}/{scope}/{model}"
+                    )
+                omissions.append(
+                    {
+                        "track": track,
+                        "variable": variable,
+                        "scope": scope,
+                        "model": model,
+                        "regimes": "tails",
+                        "reason": reason,
+                    }
+                )
+    return omissions
 
 
 def build_payload() -> dict[str, Any]:
@@ -297,33 +453,57 @@ def build_payload() -> dict[str, Any]:
         "views": {
             "track_a": {
                 "label": "Europe pooled",
+                "role": "primary",
                 "period": "2025-09-01/2026-06-30",
-                "description": "Primary Europe-pooled comparison.",
+                "description": (
+                    "The primary benchmark: ten months, Europe pooled, "
+                    "global model cohort with jackknife uncertainty."
+                ),
             },
             "track_b": {
-                "label": "Regional comparison",
+                "label": "Regional study",
+                "role": "secondary",
                 "period": "2026-03-01/2026-06-30",
-                "description": "Regional Jua models and DWD ICON-EU.",
+                "description": (
+                    "Secondary four-month study: Jua regional models vs "
+                    "DWD ICON-EU on its home domain. Global models are "
+                    "not part of this cohort."
+                ),
             },
             "country_profiles": {
                 "label": "Country profiles",
+                "role": "secondary",
                 "period": "2026-03-01/2026-06-30",
                 "description": (
-                    "Mixed regional/global model set on month-matched cells; "
-                    "not Track A filtered to a country."
+                    "Secondary per-country profiles on a mixed "
+                    "regional/global model set over month-matched cells; "
+                    "point estimates without uncertainty intervals."
                 ),
             },
         },
         "scopes": {
-            "h6_48": {"label": "6–48 h", "shortLabel": "Full"},
-            "h1_48": {"label": "1–48 h", "shortLabel": "Full"},
-            "h1_12": {"label": "1–12 h", "shortLabel": "Short"},
+            "h6_48": {
+                "label": "6–48 h (6-hourly)",
+                "shortLabel": "Full",
+                "gridLeads": 8,
+            },
+            "h1_48": {
+                "label": "1–48 h (hourly)",
+                "shortLabel": "Full",
+                "gridLeads": 48,
+            },
+            "h1_12": {
+                "label": "1–12 h (hourly)",
+                "shortLabel": "Short",
+                "gridLeads": 12,
+            },
         },
         "models": MODELS,
         "variables": VARIABLES,
         "regimes": REGIMES,
         "countries": COUNTRIES,
         "records": records,
+        "omissions": build_omissions(records),
     }
 
 

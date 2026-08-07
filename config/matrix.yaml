@@ -42,6 +42,10 @@ tracks:
   # Regional showdown: diffusion regionals vs ICON-EU on its home domain.
   # March–June keeps four full months after ICON-EU is available and adds
   # denser spring/early-summer solar.
+  # ecmwf_ens is extracted for reference but deliberately excluded from every
+  # Track B presentation (paper figures, tables, and the web export): it is a
+  # global medium-range ensemble, not a regional model, so it is not part of
+  # the regional cohort.
   track_b:
     start: "2026-03-01T00:00:00Z"
     end: "2026-07-01T00:00:00Z"

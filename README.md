@@ -137,6 +137,24 @@ Which artifact comes from which parquet:
 | `precip_categorical.parquet` | Heavy-precip (>P95) detection figure (`figp5`) and table (`tp3`), and the categorical block of `reports/paper_numbers.md` |
 | `appb_country_skill_climatology.parquet` | All four Appendix-B per-country regime-profile figures |
 
+## Website benchmark export
+
+The public benchmark explorer on jua.ai reads a compact JSON built from the
+committed climatology parquets. Regenerate and validate it with:
+
+```bash
+uv run python scripts/export_web_benchmark.py \
+  --output ../website/public/data/benchmarks/ai-weather-extremes-v1.json
+uv run python scripts/validate_web_benchmark.py \
+  ../website/public/data/benchmarks/ai-weather-extremes-v1.json
+```
+
+The exporter embeds the current `HEAD` commit as data provenance, so commit
+the repository before exporting. Every model absent from a view/variable/
+horizon combination must have a documented reason (`omissions` in the JSON);
+the exporter aborts on unexplained holes and the validator re-checks the
+shipped file, including the ECMWF ENS coverage rules.
+
 `scripts/aggregates.py` rebuilds `final_aggregates.parquet` from raw
 per-country metric tables (API / local extract) and re-runs its self-test.
 
