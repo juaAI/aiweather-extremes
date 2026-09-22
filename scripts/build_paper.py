@@ -9,12 +9,28 @@ commit timestamp is used, which is stable across clones of the same commit.
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 PAPER = REPO / "paper"
 EXPECTED_TECTONIC_VERSION = "Tectonic 0.16.9"
+
+
+def tectonic_binary() -> str:
+    configured = os.environ.get("TECTONIC_BIN")
+    if configured:
+        return configured
+    discovered = shutil.which("tectonic")
+    if discovered:
+        return discovered
+    local = Path.home() / ".local" / "bin" / "tectonic"
+    if local.exists():
+        return str(local)
+    raise RuntimeError(
+        "Tectonic 0.16.9 is required. Set TECTONIC_BIN or install it on PATH."
+    )
 
 
 def source_date_epoch() -> str:
@@ -29,8 +45,9 @@ def source_date_epoch() -> str:
 
 
 def main() -> None:
+    tectonic = tectonic_binary()
     actual_version = subprocess.check_output(
-        ["tectonic", "--version"], text=True
+        [tectonic, "--version"], text=True
     ).strip()
     if actual_version != EXPECTED_TECTONIC_VERSION:
         raise RuntimeError(
@@ -40,7 +57,7 @@ def main() -> None:
     env = os.environ.copy()
     env["SOURCE_DATE_EPOCH"] = source_date_epoch()
     print("SOURCE_DATE_EPOCH=", env["SOURCE_DATE_EPOCH"])
-    subprocess.run(["tectonic", "main.tex"], cwd=PAPER, env=env, check=True)
+    subprocess.run([tectonic, "main.tex"], cwd=PAPER, env=env, check=True)
 
 
 if __name__ == "__main__":

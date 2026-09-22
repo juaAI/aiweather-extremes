@@ -1,0 +1,22 @@
+AI weather models are often reported to underpredict extremes, but most
+evidence comes from deterministic global systems verified against reanalysis.
+We compare eleven learned and numerical alternatives to ECMWF IFS over ten
+months. Wind and temperature use 667 European stations at 6–48 h leads;
+solar radiation uses a separate European station panel and hourly leads. Regimes
+are fixed by an ERA5 1991–2020 climatology. After a
+rolling domain-mean bias correction applied identically to every system, all
+five global learned systems lose 2.7–6.8 points of relative MAE skill from all
+conditions to the >P95 regime in both variables, as does the ECMWF ENS mean.
+Under these fixed climatological regimes, two regional generative systems and
+the deterministic global numerical models do not. Without correction, both
+regional systems still gain and four of five global learned systems still lose
+temperature tail skill, but several wind rankings change. Bias conditioned on the observation points toward the centre for
+every system, as expected for imperfect forecasts. When conditioning on the
+forecast instead, high-tail temperature bias is within 0.3 °C of zero for
+every system, while wind reveals larger model-specific differences. The
+station-verified tail deficit is therefore reproduced for the tested global
+learned cohort under fixed climatological regimes, weakens under in-window
+percentiles, and is not uniform across learned forecasting systems. The
+solar-specific Helios model is strongest in both irradiance tails but loses
+skill in the centre of the distribution, showing that specialization
+redistributes rather than uniformly improves skill.

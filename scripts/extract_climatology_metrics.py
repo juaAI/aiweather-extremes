@@ -40,7 +40,8 @@ COUNTRIES = [str(country) for country in CONFIG["countries"]]
 MODEL_ATTRS = CONFIG["models"]
 
 DERIVED_DIR = PROJECT_ROOT / "data" / "derived"
-CACHE_DIR = PROJECT_ROOT / "data" / "cache" / "climatology_metrics_paired_exact_v10"
+# Bump whenever the jointly matched model cohort or query semantics change.
+CACHE_DIR = PROJECT_ROOT / "data" / "cache" / "climatology_metrics_paired_exact_v15"
 THRESHOLDS_PATH = (
     DERIVED_DIR / "station_climatology_thresholds_era5_1991_2020.parquet"
 )
@@ -72,6 +73,7 @@ TRACK_MODELS = {
         "ept2_hrrr",
         "ept2_e",
         "ept2_reasoning",
+        "aifs_ens",
         "aifs",
         "aurora",
         "ecmwf_ifs_single",
@@ -347,6 +349,15 @@ common_dates AS (
   GROUP BY init_date
   HAVING uniqExact(model) = {{n_models:UInt16}}
 ),
+common_points AS (
+  SELECT station, init_time, prediction_timedelta
+  FROM production.synoptic_station_error_member
+  WHERE model IN {{models:Array(String)}}
+    {shared_where()}
+    AND toDate(init_time) IN (SELECT init_date FROM common_dates)
+  GROUP BY station, init_time, prediction_timedelta
+  HAVING uniqExact(model) = {{n_models:UInt16}}
+),
 model_points AS (
   SELECT model, station, init_time, prediction_timedelta,
          any(latitude) AS latitude, any(longitude) AS longitude,
@@ -355,6 +366,10 @@ model_points AS (
   WHERE model IN {{models:Array(String)}}
     {shared_where()}
     AND toDate(init_time) IN (SELECT init_date FROM common_dates)
+    AND (station, init_time, prediction_timedelta) IN (
+      SELECT station, init_time, prediction_timedelta
+      FROM common_points
+    )
   GROUP BY model, station, init_time, prediction_timedelta
 ),
 points AS (
@@ -390,6 +405,13 @@ bucketed AS (
   INNER JOIN window_thresholds AS w
     ON w.period_kind = p.period_kind
    AND w.period_start = p.period_start
+),
+debiased_common_points AS (
+  SELECT station_id, init_time, prediction_timedelta
+  FROM bucketed
+  WHERE bias_present = 1 AND isFinite(bias_value)
+  GROUP BY station_id, init_time, prediction_timedelta
+  HAVING uniqExact(model_name) = {{n_models:UInt16}}
 )"""
 
 
@@ -418,6 +440,10 @@ ARRAY JOIN if(
   if(threshold_present, ['all', regime], ['all', 'unclassified'])
 ) AS bucket
 WHERE score.3 = 1
+  AND (station_id, init_time, prediction_timedelta) IN (
+    SELECT station_id, init_time, prediction_timedelta
+    FROM debiased_common_points
+  )
 GROUP BY bucket_definition, model_name, prediction_timedelta, debias, obs_bucket,
          period_kind, period_start
 ORDER BY bucket_definition, model_name, prediction_timedelta, debias, obs_bucket,
@@ -462,7 +488,8 @@ obs AS (
 {source},
 {bias},
 joined AS (
-  SELECT p.model AS model_name, p.init_time, p.prediction_timedelta,
+  SELECT p.model AS model_name, p.station AS station_id,
+         p.init_time, p.prediction_timedelta,
          p.raw_error, o.obs_value,
          b.bias_present, b.bias_value,
          t.station != '' AS threshold_present,
@@ -559,7 +586,8 @@ obs AS (
 {source},
 {bias},
 joined AS (
-  SELECT p.model AS model_name, p.init_time, p.prediction_timedelta,
+  SELECT p.model AS model_name, p.station AS station_id,
+         p.init_time, p.prediction_timedelta,
          p.raw_error, o.obs_value,
          b.bias_present, b.bias_value,
          (t.station != '' AND t.q95 > 0) AS threshold_present,

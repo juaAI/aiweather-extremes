@@ -1,0 +1,46 @@
+{
+  "median_thresholds": {
+    "air_temperature_at_height_level_2m": {
+      "p05": 278.733154296875,
+      "p95": 289.15228271484375
+    },
+    "wind_speed_at_height_level_10m": {
+      "p05": 1.199798822402954,
+      "p95": 6.625726699829102
+    }
+  },
+  "scored_station_count": 667,
+  "solar_regime_station_count_excluding_at": 543,
+  "solar_threshold_stations_by_country": {
+    "AT": 392,
+    "BE": 13,
+    "CH": 96,
+    "DE": 41,
+    "DK": 26,
+    "ES": 1,
+    "FR": 196,
+    "IT": 76,
+    "NL": 34,
+    "NO": 60
+  },
+  "stations_by_country": {
+    "AT": 8,
+    "BE": 12,
+    "CH": 16,
+    "CZ": 11,
+    "DE": 67,
+    "DK": 12,
+    "ES": 40,
+    "FR": 227,
+    "GB": 74,
+    "IT": 81,
+    "NL": 13,
+    "NO": 31,
+    "PL": 75
+  },
+  "threshold_source": "ERA5 1991-2020; station/day-of-year/UTC-hour",
+  "upper_tail_fraction_of_matched_ifs_pairs": {
+    "air_temperature_at_height_level_2m": 0.1352011582752853,
+    "wind_speed_at_height_level_10m": 0.10195602227112296
+  }
+}

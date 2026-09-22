@@ -67,6 +67,7 @@ DISPLAY = {
     "ept2_hrrr": "Jua EPT-2 HRRR",
     "ept2_e": "Jua EPT-2e",
     "ept2_reasoning": "Jua EPT-2 Reasoning",
+    "aifs_ens": "ECMWF AIFS ENS (mean)",
     "aifs": "ECMWF AIFS",
     "aurora": "Microsoft Aurora",
     "ecmwf_ifs_single": "ECMWF IFS",
@@ -90,6 +91,7 @@ COLORS = {
     "ept2_1_helios": "#E69F00",  # amber
     "aurora": "#FF7F0E",  # orange
     "aifs": "#1F4E9C",  # deep blue
+    "aifs_ens": "#CC79A7",  # magenta
     "ecmwf_ifs_single": "#000000",  # black (reference)
     "ecmwf_ens": "#56B4E9",  # light blue
     "noaa_gfs_single": "#7F7F7F",  # grey
@@ -102,6 +104,7 @@ LINESTYLES = {
     "ept2_1_europa": "-",
     "ept2_hrrr": "-",
     "ept2_1_helios": "-",
+    "aifs_ens": "-",
     # Regression AI: a long dash-dot cycle that remains legible in compact
     # legends. Matplotlib's default '-.' collapses visually at paper scale.
     "ept2_reasoning": (0, (5.0, 1.5, 1.2, 1.5)),
@@ -127,6 +130,7 @@ MARKERS = {
     "ept2_e": "P",
     "aurora": "v",
     "aifs": "X",
+    "aifs_ens": "d",
     "ecmwf_ens": "^",
     "noaa_gfs_single": "h",
     "icon_global": "<",
@@ -160,6 +164,7 @@ MODEL_ORDER = [
     "ept2_reasoning",
     "ept2_e",
     "aurora",
+    "aifs_ens",
     "aifs",
     "ecmwf_ens",
     "noaa_gfs_single",

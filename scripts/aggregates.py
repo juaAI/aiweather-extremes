@@ -36,10 +36,10 @@ excluded from pooling on both sides. family='mean' and family='crps' rows
 are never mixed in one computation.
 
 Lead scopes: 'lead_6/12/24/48' (single leads), 'h6_48' (6-hourly grid
-6..48h, the AIFS/Aurora cadence bound = Track A cross-model standard),
+6..48h, the AIFS/AIFS ENS/Aurora cadence bound = Track A standard),
 'h6_240' (6-hourly grid to 240h, long-horizon models), 'h1_48' (all hourly
 leads 1..48). A model is a member of a scope only if it natively covers
->= 50% of the scope grid (excludes e.g. 6-hourly AIFS/Aurora from hourly
+>= 50% of the scope grid (excludes e.g. six-hourly AIFS-family models from hourly
 scopes and 48h-horizon regionals from h6_240); members with partial grids
 (e.g. icon_global tops out at 180h) keep their rows with n_leads <
 grid_leads.
@@ -50,6 +50,7 @@ Run:  python scripts/aggregates.py   (builds + self-tests)
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import random
@@ -69,6 +70,8 @@ VARIANT_SUFFIXES = {
 }
 
 REFERENCE = "ecmwf_ifs_single"
+PRECIP = "precipitation_amount_sum_1h"
+PRESERVED_PRECIP = DERIVED / "precip_aggregates_compact.parquet"
 MIN_SAMPLES = 100
 BUCKETS = ["all", "lt_q5", "q5_q25", "q25_q75", "q75_q95", "gt_q95"]
 # Precipitation carries its own wet-hour regimes (dry mass + climatological wet
@@ -192,7 +195,7 @@ def _member_models(df: pl.DataFrame) -> pl.DataFrame:
 
 
 def _scope_frame(df: pl.DataFrame, members: pl.DataFrame) -> pl.DataFrame:
-    """Explode source rows into (row x member lead_scope), sample-filtered."""
+    """Explode source rows into (row x member lead_scope)."""
     scope_frames = []
     for scope, grid in SCOPES.items():
         sub = df.filter(pl.col("prediction_timedelta").is_in(grid)).with_columns(
@@ -202,7 +205,7 @@ def _scope_frame(df: pl.DataFrame, members: pl.DataFrame) -> pl.DataFrame:
     exploded = pl.concat(scope_frames)
     return exploded.join(
         members, on=["track", "model", "variable", "debias", "lead_scope"], how="inner"
-    ).filter(pl.col("sample_count") >= MIN_SAMPLES)
+    )
 
 
 def _pool(frame: pl.DataFrame, keys: list[str], metric: str) -> pl.DataFrame:
@@ -279,16 +282,28 @@ def _skill_from_cells(
     )
 
 
-def _jackknife(groups: pl.DataFrame, keys: list[str]) -> pl.DataFrame:
+def _jackknife(
+    groups: pl.DataFrame, keys: list[str], metric: str = "mae"
+) -> pl.DataFrame:
     """Delete-1 jackknife SE of skill_pct over monthly replicates.
 
     Input: month-level matched cells. Per month we keep the pooled sums; the
     leave-one-month-out skill is recomputed from the complementary sums.
     """
+    model_sum = (
+        (pl.col("avg") ** 2) * pl.col("sample_count")
+        if metric == "rmse"
+        else pl.col("avg") * pl.col("sample_count")
+    )
+    ref_sum = (
+        (pl.col("ref_avg") ** 2) * pl.col("ref_n")
+        if metric == "rmse"
+        else pl.col("ref_avg") * pl.col("ref_n")
+    )
     per_month = groups.group_by([*keys, "period_start"]).agg(
-        ((pl.col("avg") ** 2) * pl.col("sample_count")).sum().alias("s_model"),
+        model_sum.sum().alias("s_model"),
         pl.col("sample_count").sum().alias("n_model"),
-        ((pl.col("ref_avg") ** 2) * pl.col("ref_n")).sum().alias("s_ref"),
+        ref_sum.sum().alias("s_ref"),
         pl.col("ref_n").sum().alias("n_ref"),
     )
     packed = per_month.group_by(keys).agg(
@@ -309,7 +324,9 @@ def _jackknife(groups: pl.DataFrame, keys: list[str]) -> pl.DataFrame:
             sr, nr = ts_ref - x["s_ref"], tn_ref - x["n_ref"]
             if nm <= 0 or nr <= 0:
                 return None
-            thetas.append(100 * (1 - math.sqrt(sm / nm) / math.sqrt(sr / nr)))
+            model_value = math.sqrt(sm / nm) if metric == "rmse" else sm / nm
+            ref_value = math.sqrt(sr / nr) if metric == "rmse" else sr / nr
+            thetas.append(100 * (1 - model_value / ref_value))
         mean = sum(thetas) / m
         return math.sqrt((m - 1) / m * sum((t - mean) ** 2 for t in thetas))
 
@@ -319,12 +336,92 @@ def _jackknife(groups: pl.DataFrame, keys: list[str]) -> pl.DataFrame:
     ).drop("months")
 
 
+def _jackknife_tail_penalty(
+    groups: pl.DataFrame, keys: list[str]
+) -> pl.DataFrame:
+    """Delete-one-month SE for skill(>P95) minus skill(all)."""
+    per_month = (
+        groups.filter(pl.col("obs_bucket").is_in(["all", "gt_q95"]))
+        .group_by([*keys, "period_start", "obs_bucket"])
+        .agg(
+            (pl.col("avg") * pl.col("sample_count")).sum().alias("s_model"),
+            pl.col("sample_count").sum().alias("n_model"),
+            (pl.col("ref_avg") * pl.col("ref_n")).sum().alias("s_ref"),
+            pl.col("ref_n").sum().alias("n_ref"),
+        )
+    )
+    packed = per_month.group_by(keys).agg(
+        pl.struct(
+            ["period_start", "obs_bucket", "s_model", "n_model", "s_ref", "n_ref"]
+        ).alias("rows"),
+        pl.col("period_start").n_unique().cast(pl.Int64).alias("n_months"),
+    )
+
+    def se(rows: list[dict]) -> float | None:
+        by_bucket: dict[str, dict[object, dict]] = {"all": {}, "gt_q95": {}}
+        for row in rows:
+            by_bucket[row["obs_bucket"]][row["period_start"]] = row
+        months = sorted(set(by_bucket["all"]) & set(by_bucket["gt_q95"]))
+        if len(months) < 2:
+            return None
+        totals: dict[str, tuple[float, int, float, int]] = {}
+        for bucket in ("all", "gt_q95"):
+            values = [by_bucket[bucket][month] for month in months]
+            totals[bucket] = (
+                sum(value["s_model"] for value in values),
+                sum(value["n_model"] for value in values),
+                sum(value["s_ref"] for value in values),
+                sum(value["n_ref"] for value in values),
+            )
+        thetas = []
+        for month in months:
+            skills = {}
+            for bucket in ("all", "gt_q95"):
+                sm, nm, sr, nr = totals[bucket]
+                omitted = by_bucket[bucket][month]
+                sm -= omitted["s_model"]
+                nm -= omitted["n_model"]
+                sr -= omitted["s_ref"]
+                nr -= omitted["n_ref"]
+                if nm <= 0 or nr <= 0:
+                    return None
+                skills[bucket] = 100 * (1 - (sm / nm) / (sr / nr))
+            thetas.append(skills["gt_q95"] - skills["all"])
+        mean = sum(thetas) / len(thetas)
+        return math.sqrt(
+            (len(thetas) - 1)
+            / len(thetas)
+            * sum((theta - mean) ** 2 for theta in thetas)
+        )
+
+    return packed.with_columns(
+        pl.col("rows").map_elements(se, return_dtype=pl.Float64).alias("skill_se"),
+    ).drop("rows")
+
+
 def build(suffix: str = "") -> pl.DataFrame:
     df = _load_sources(suffix)
     members = _member_models(df)
     scoped = _scope_frame(df, members)
-    full = scoped.filter(pl.col("period_kind") == "full")
-    month = scoped.filter(pl.col("period_kind") == "month")
+    full = scoped.filter(
+        (pl.col("period_kind") == "full") & (pl.col("sample_count") >= MIN_SAMPLES)
+    )
+    eligibility_keys = [
+        "track",
+        "model",
+        "variable",
+        "obs_bucket",
+        "debias",
+        "family",
+        "metric",
+        "country",
+        "prediction_timedelta",
+        "lead_scope",
+    ]
+    eligible = full.select(eligibility_keys).unique()
+    month = scoped.filter(pl.col("period_kind") == "month").join(
+        eligible, on=eligibility_keys, how="inner"
+    )
 
     parts: list[pl.DataFrame] = []
     base_cols = [
@@ -368,10 +465,40 @@ def build(suffix: str = "") -> pl.DataFrame:
     skill = skill.join(jk, on=_SKILL_KEYS, how="left")
     parts.append(finish(skill, "skill_pct"))
 
+    penalty_keys = [
+        "track",
+        "model",
+        "variable",
+        "debias",
+        "lead_scope",
+    ]
+    all_skill = skill.filter(pl.col("obs_bucket") == "all").select(
+        *penalty_keys,
+        pl.col("value").alias("all_value"),
+    )
+    tail_skill = skill.filter(pl.col("obs_bucket") == "gt_q95").select(
+        *penalty_keys,
+        pl.col("value").alias("tail_value"),
+        "n_leads",
+        "grid_leads",
+        "n_samples",
+    )
+    penalty = (
+        tail_skill.join(all_skill, on=penalty_keys, how="inner")
+        .with_columns(
+            (pl.col("tail_value") - pl.col("all_value")).alias("value"),
+            pl.lit("gt_q95_minus_all").alias("obs_bucket"),
+        )
+        .drop("tail_value", "all_value")
+    )
+    penalty_jk = _jackknife_tail_penalty(cells_month, penalty_keys)
+    penalty = penalty.join(penalty_jk, on=penalty_keys, how="left")
+    parts.append(finish(penalty, "tail_penalty"))
+
     cells_full_rmse = _matched_cells(mean_full, "rmse")
     skill_rmse = _skill_from_cells(cells_full_rmse, _SKILL_KEYS, "rmse")
     cells_month_rmse = _matched_cells(mean_month, "rmse")
-    jk_rmse = _jackknife(cells_month_rmse, _SKILL_KEYS)
+    jk_rmse = _jackknife(cells_month_rmse, _SKILL_KEYS, "rmse")
     skill_rmse = skill_rmse.join(jk_rmse, on=_SKILL_KEYS, how="left")
     parts.append(finish(skill_rmse, "skill_pct_rmse"))
 
@@ -528,14 +655,15 @@ def self_test(
 ) -> bool:
     src = _load_sources(suffix).filter(pl.col("period_kind") == "full")
     rng = random.Random(seed)  # noqa: S311 -- reproducible sampling, not crypto
+    candidates = result.filter(~pl.col("kind").is_in(["month", "tail_penalty"]))
     # one candidate per kind first, then fill randomly
-    kinds = result["kind"].unique().to_list()
+    kinds = candidates["kind"].unique().to_list()
     picks: list[dict] = []
     for kind in rng.sample(kinds, min(len(kinds), n)):
-        sub = result.filter(pl.col("kind") == kind)
+        sub = candidates.filter(pl.col("kind") == kind)
         picks.append(sub.row(rng.randrange(sub.height), named=True))
     while len(picks) < n:
-        picks.append(result.row(rng.randrange(result.height), named=True))
+        picks.append(candidates.row(rng.randrange(candidates.height), named=True))
 
     ok = True
     for row in picks:
@@ -567,16 +695,85 @@ def main() -> None:
     )
     args = parser.parse_args()
     suffix = VARIANT_SUFFIXES[args.variant]
-
-    result = build(suffix)
     out_path = DERIVED / f"final_aggregates{suffix}.parquet"
+
+    # The raw precipitation pull is intentionally not committed because it is
+    # large. A fresh extraction supplies bucketed_metrics_precip.parquet. For
+    # an offline rebuild from the public compact artifacts, preserve the
+    # already-published precipitation slice explicitly and record its source
+    # aggregate hash rather than silently dropping the variable.
+    preserved_precip: pl.DataFrame | None = None
+    preserved_from_sha256: str | None = None
+    precip_source = DERIVED / "bucketed_metrics_precip.parquet"
+    if not precip_source.exists() and PRESERVED_PRECIP.exists():
+        preserved_from_sha256 = hashlib.sha256(
+            PRESERVED_PRECIP.read_bytes()
+        ).hexdigest()
+        preserved_precip = pl.read_parquet(PRESERVED_PRECIP)
+        if preserved_precip.is_empty():
+            preserved_precip = None
+            preserved_from_sha256 = None
+
+    rebuilt = build(suffix)
+    ok = self_test(rebuilt, suffix=suffix)
+    result = rebuilt
+    preserved_ok = True
+    if preserved_precip is not None:
+        if not rebuilt.filter(pl.col("variable") == PRECIP).is_empty():
+            raise RuntimeError("cannot preserve precipitation over rebuilt rows")
+        key_columns = [
+            "track",
+            "model",
+            "variable",
+            "obs_bucket",
+            "lead_scope",
+            "debias",
+            "kind",
+            "country",
+        ]
+        preserved_ok = (
+            preserved_precip.schema == rebuilt.schema
+            and not preserved_precip.select(key_columns).is_duplicated().any()
+            and preserved_precip["value"].is_not_null().all()
+        )
+        if not preserved_ok:
+            raise RuntimeError("preserved precipitation slice failed validation")
+        result = pl.concat([rebuilt, preserved_precip]).sort(
+            [
+                "track",
+                "kind",
+                "variable",
+                "lead_scope",
+                "obs_bucket",
+                "debias",
+                "model",
+                "country",
+            ]
+        )
+
     result.write_parquet(out_path)
     print(f"wrote {out_path} ({result.height} rows)")
     summary = result.group_by(["track", "kind"]).agg(pl.len()).sort(["track", "kind"])
     print(summary)
-    ok = self_test(result, suffix=suffix)
+    status: dict[str, object] = {
+        "rows": result.height,
+        "self_test": "PASS" if ok and preserved_ok else "FAIL",
+        "precipitation_source": (
+            "raw bucketed_metrics_precip.parquet"
+            if precip_source.exists()
+            else "data/derived/precip_aggregates_compact.parquet"
+        ),
+    }
+    if preserved_precip is not None:
+        status.update(
+            {
+                "preserved_precip_rows": preserved_precip.height,
+                "preserved_from_sha256": preserved_from_sha256,
+                "preserved_validation": "PASS",
+            }
+        )
     (DERIVED / f"final_aggregates{suffix}_status.json").write_text(
-        json.dumps({"rows": result.height, "self_test": "PASS" if ok else "FAIL"})
+        json.dumps(status, indent=2) + "\n"
     )
     if not ok:
         raise SystemExit(1)

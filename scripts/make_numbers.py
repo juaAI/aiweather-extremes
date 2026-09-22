@@ -26,6 +26,7 @@ from style import (
     PRECIP_BUCKET_ORDER,
     REFERENCE,
     TEMP,
+    VAR_TITLE,
     WIND,
 )
 
@@ -55,9 +56,9 @@ SCOPE_LABEL = {
 TRACK_A_SCOPES = ["lead_6", "lead_12", "lead_24", "lead_48", "h6_48", "h6_240", "h1_48"]
 TRACK_BC_SCOPES = ["lead_6", "lead_12", "lead_24", "lead_48", "h6_48", "h1_48"]
 
-# Solar model order (track_c includes ept2_1_helios, excludes aifs/aurora/ens).
+# Solar model order (track_c includes Helios; coarse AIFS outputs are omitted).
 SOLAR_ORDER = ["ept2_1_helios"] + [
-    m for m in MODEL_ORDER if m not in ("aifs", "aurora", "ecmwf_ens")
+    m for m in MODEL_ORDER if m not in ("aifs", "aifs_ens", "aurora", "ecmwf_ens")
 ]
 
 # Precip: aifs/aurora/helios emit no precipitation.
@@ -196,13 +197,14 @@ def _omissions(fa: pl.DataFrame) -> list[str]:
                 )
         partial = (
             t.filter(pl.col("n_leads") < pl.col("grid_leads"))
-            .group_by(["model", "lead_scope"])
+            .group_by(["model", "variable", "lead_scope"])
             .agg(pl.col("n_leads").max(), pl.col("grid_leads").first())
             .sort(["lead_scope", "model"])
         )
         for r in partial.iter_rows(named=True):
             lines.append(
-                f"- {track} {r['lead_scope']}: {DISPLAY.get(r['model'], r['model'])} "
+                f"- {track} {r['lead_scope']} {VAR_TITLE.get(r['variable'], r['variable'])}: "
+                f"{DISPLAY.get(r['model'], r['model'])} "
                 f"pools {r['n_leads']}/{r['grid_leads']} grid leads (missing leads "
                 "omitted, never interpolated)"
             )
@@ -215,21 +217,31 @@ def main() -> None:
         (DERIVED / f"final_aggregates{VARIANT_SUFFIX}_status.json").read_text()
     )
     matrix = yaml.safe_load((PROJECT_ROOT / "config" / "matrix.yaml").read_text())
+    source_name = f"final_aggregates{VARIANT_SUFFIX}.parquet"
+    if VARIANT_SUFFIX == "_climatology":
+        regime_description = (
+            "fixed ERA5 1991-2020 station/day/hour climatological regimes"
+        )
+        regenerate = (
+            "EXTREMES_VARIANT=_climatology python scripts/make_numbers.py"
+        )
+    else:
+        regime_description = "local per-country evaluation-window percentile regimes"
+        regenerate = "python scripts/make_numbers.py"
 
     L: list[str] = [
         "# Inline paper numbers",
         "",
-        "Single source: `data/derived/final_aggregates.parquet` "
+        f"Single source: `data/derived/{source_name}` "
         f"({status['rows']} rows, aggregation self-test: {status['self_test']}). "
-        "Regenerate with `python scripts/aggregates.py && "
-        "python scripts/make_numbers.py`.",
+        f"Regenerate this report with `{regenerate}` after aggregation.",
         "",
         "Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; "
         "RMSE-based skill in kind=skill_pct_rmse), sample-matched "
         "per (country, lead) cell vs ECMWF IFS; cross-country and cross-lead "
         "pooling sample-weighted (RMSE quadratic, bias/MAE/CRPS linear); regime "
-        "cells with <100 samples excluded; extremes = LOCAL per-country "
-        "percentile regimes (obs_bucket); (±x.x) = jackknife SE over monthly "
+        f"cells with <100 samples excluded; extremes = {regime_description} "
+        "(obs_bucket); (±x.x) = jackknife SE over monthly "
         "replicates. All skills/biases/deltas signed, 1 decimal.",
         "",
         "## Coverage omissions (models lacking leads are omitted, not interpolated)",
@@ -453,6 +465,7 @@ def main() -> None:
             f"| {a.get('output', '?')} | {a.get('domain', '?')} | {cell(WIND)} | {cell(TEMP)} |"
         )
 
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("\n".join(L) + "\n")
     print("wrote", OUT)
 

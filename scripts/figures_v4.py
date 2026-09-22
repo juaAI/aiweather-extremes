@@ -83,7 +83,11 @@ def _save(fig, path: Path, **kwargs) -> None:
 # MODEL_ORDER lacks the solar-only ept2_1_helios; track_c needs it first.
 # (The raw track_c extraction still carries legacy 'ept2' rows; keeping the
 # ordering here restricted to SOLAR_ORDER excludes them from every output.)
-SOLAR_ORDER = ["ept2_1_helios", *MODEL_ORDER]
+SOLAR_ORDER = ["ept2_1_helios"] + [
+    model
+    for model in MODEL_ORDER
+    if model not in ("aifs", "aifs_ens", "aurora", "ecmwf_ens")
+]
 # Track C coverage: GB/IT/PL have no solar station obs.
 SOLAR_COUNTRIES = [c for c in COUNTRIES if c not in ("GB", "IT", "PL")]
 SOLAR_WINDOW = "20 Mar\u201315 Jun"
@@ -596,7 +600,7 @@ def _headline_bars(
 
 
 def fig3() -> None:
-    """Track A: wind/temp 6–48 h (all models); solar 1–48 h hourly."""
+    """Track A: wind/temp 6–48 h and solar 1–48 h."""
     panels = []
     for variable, scope, span in (
         (WIND, "h6_48", "6\u201348 h"),
@@ -611,7 +615,7 @@ def fig3() -> None:
 
 
 def fig3_short() -> None:
-    """Track A, 1–12 h — wind, temp, solar (AIFS/Aurora omitted)."""
+    """Track A, 1–12 h — wind, temp, solar (six-hourly AI omitted)."""
     panels = []
     for variable in (WIND, TEMP, SOLAR):
         order, values = _headline_a_values("h1_12", variable)
@@ -856,9 +860,9 @@ def fig5_solar() -> None:
 # F6 — conditional bias fingerprint at lead 48 h (envelope redesign)
 # ---------------------------------------------------------------------------
 
-# Two highlighted models on top of the all-model envelope: one generative
-# ensemble (solid green) and one regression AI (dash-dot deep blue).
-F6_HIGHLIGHT = ["ept2_1_europa", "aifs"]
+# Highlight a generative regional, deterministic AIFS, and AIFS ENS on top of
+# the all-model envelope so the two ECMWF AI products can be compared directly.
+F6_HIGHLIGHT = ["ept2_1_europa", "aifs", "aifs_ens"]
 # aifs has no solar rows; helios is the natural second highlight there.
 F6_HIGHLIGHT_SOLAR = ["ept2_1_europa", "ept2_1_helios"]
 F6_HIGHLIGHT_PRECIP = ["ept2_1_europa", "ept2_reasoning"]
@@ -878,38 +882,16 @@ SOLAR_BIAS_A = _derived("solar_bias_lead48_track_a")
 
 
 def fig6() -> None:
-    """Conditional-bias fingerprint at 48 h: gray envelope + IFS + highlights.
-
-    Wind/temp/precipitation from track_a aggregates; solar from Track A
-    Sep–Jun extract (``solar_bias_lead48_track_a.parquet``).
-    """
+    """Observation-conditioned bias at 48 h for wind and temperature."""
     panels = [
         (WIND, "track_a", MODEL_ORDER, F6_HIGHLIGHT, 1.0, BUCKET_ORDER, BUCKET_SHORT),
         (TEMP, "track_a", MODEL_ORDER, F6_HIGHLIGHT, 1.0, BUCKET_ORDER, BUCKET_SHORT),
-        (
-            SOLAR,
-            "solar_a",
-            SOLAR_ORDER,
-            F6_HIGHLIGHT_SOLAR,
-            1 / 3600.0,
-            BUCKET_ORDER,
-            BUCKET_SHORT,
-        ),
-        (
-            PRECIP,
-            "track_a",
-            F6_PRECIP_ORDER,
-            F6_HIGHLIGHT_PRECIP,
-            1.0,
-            PRECIP_BUCKET_ORDER,
-            PRECIP_BUCKET_SHORT,
-        ),
     ]
     solar_bias = (
         pl.read_parquet(SOLAR_BIAS_A) if SOLAR_BIAS_A.exists() else pl.DataFrame()
     )
 
-    fig, axes = plt.subplots(2, 2, figsize=(7.0, 6.1))
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.5))
     for ax, (
         variable,
         track,
@@ -1016,8 +998,6 @@ def fig6() -> None:
     legend_models = [
         REFERENCE,
         *F6_HIGHLIGHT,
-        *F6_HIGHLIGHT_SOLAR,
-        *F6_HIGHLIGHT_PRECIP,
     ]
     handles = model_legend_handles(legend_models, ncol=3)
     if handles:
@@ -1031,7 +1011,7 @@ def fig6() -> None:
             handlelength=3.2,
             handletextpad=0.6,
         )
-    fig.tight_layout(rect=(0, 0.08, 1, 0.96))
+    fig.tight_layout(rect=(0, 0.16, 1, 0.92))
     _save(fig, FIGURES / "fig6_fingerprint.png")
     plt.close(fig)
 
@@ -1353,7 +1333,6 @@ def main() -> None:
     fig2(TEMP)
     fig2_solar()
     fig3()
-    fig3_short()
     fig3b()
     fig5(WIND)
     fig5(TEMP)

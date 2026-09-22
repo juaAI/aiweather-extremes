@@ -80,6 +80,14 @@ MODELS = [
         "marker": "triangleDown",
     },
     {
+        "key": "aifs_ens",
+        "label": "ECMWF AIFS ENS (mean)",
+        "shortLabel": "ECMWF AIFS ENS",
+        "group": "External AI",
+        "color": "#CC79A7",
+        "marker": "diamond",
+    },
+    {
         "key": "aifs",
         "label": "ECMWF AIFS",
         "shortLabel": "ECMWF AIFS",
@@ -212,10 +220,6 @@ _REASON_ENS_NOT_REGIONAL = (
     "Global ensemble; excluded from the regional cohort by design."
 )
 _REASON_NOT_COUNTRY = "Not part of the country-profile model set."
-_REASON_ENS_H1_12_TAILS = (
-    "Reported for all conditions only on the 1–12 h grid: just two native "
-    "leads (6 h and 12 h) fall in this window, too few for regime splits."
-)
 
 
 def omission_reason(
@@ -232,7 +236,7 @@ def omission_reason(
             return _REASON_REGIONAL_ONLY
         if model == "ept2_1_helios" and variable != SOLAR:
             return _REASON_SOLAR_SPECIALIST
-        if model in ("aifs", "aurora"):
+        if model in ("aifs", "aifs_ens", "aurora"):
             if variable == SOLAR:
                 return _REASON_NO_SOLAR
             if variable == PRECIP:
@@ -244,11 +248,11 @@ def omission_reason(
                 return _REASON_NO_SOLAR
             if variable == PRECIP and scope in HOURLY_SCOPES:
                 return _REASON_ENS_PRECIP
-            if scope == "h1_48":
+            if scope in HOURLY_SCOPES:
                 return _REASON_SIX_HOURLY
         return None
     if track == "track_b":
-        if model == "ecmwf_ens":
+        if model in ("ecmwf_ens", "aifs_ens"):
             return _REASON_ENS_NOT_REGIONAL
         if model == "ept2_1_helios" and variable != SOLAR:
             return _REASON_SOLAR_SPECIALIST
@@ -266,13 +270,6 @@ def partial_reason(
     track: str, variable: str, scope: str, model: str
 ) -> str | None:
     """Why `model` has only an all-conditions record for this combo."""
-    if (
-        track == "track_a"
-        and model == "ecmwf_ens"
-        and scope == "h1_12"
-        and variable in (WIND, TEMP)
-    ):
-        return _REASON_ENS_H1_12_TAILS
     return None
 
 

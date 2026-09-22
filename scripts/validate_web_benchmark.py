@@ -170,9 +170,8 @@ def main() -> None:
             f"ENS must ship full h6_48 coverage for {variable}",
         )
         check(
-            presence[("track_a", variable, "h1_12")].get("ecmwf_ens")
-            == {"all"},
-            f"ENS h1_12 {variable} must be all-conditions only",
+            presence[("track_a", variable, "h1_12")].get("ecmwf_ens") is None,
+            f"ENS must not appear on the hourly 1–12 h grid for {variable}",
         )
         check(
             presence[("track_a", variable, "h1_48")].get("ecmwf_ens") is None,
@@ -186,6 +185,28 @@ def main() -> None:
     check(
         not any(r["track"] == "track_b" and r["model"] == "ecmwf_ens" for r in records),
         "ENS must not appear in the Track B regional cohort",
+    )
+    for variable in (WIND, TEMP):
+        check(
+            presence[("track_a", variable, "h6_48")].get("aifs_ens")
+            == STANDARD_REGIMES,
+            f"AIFS ENS must ship full h6_48 coverage for {variable}",
+        )
+        for scope in ("h1_12", "h1_48"):
+            check(
+                presence[("track_a", variable, scope)].get("aifs_ens") is None,
+                f"AIFS ENS must not appear on the {scope} hourly grid for {variable}",
+            )
+    check(
+        not any(
+            r["model"] == "aifs_ens" and r["variable"] in (SOLAR, PRECIP)
+            for r in records
+        ),
+        "AIFS ENS coarse accumulations must not be exported as hourly values",
+    )
+    check(
+        not any(r["track"] == "track_b" and r["model"] == "aifs_ens" for r in records),
+        "AIFS ENS must not appear in the Track B regional cohort",
     )
     check(
         not any(r["regime"] == "unclassified" for r in records),

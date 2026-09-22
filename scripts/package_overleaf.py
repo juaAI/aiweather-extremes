@@ -23,6 +23,11 @@ REPO = Path(__file__).resolve().parents[1]
 PAPER = REPO / "paper"
 FIGURES = REPO / "figures"
 DEFAULT_OUTPUT = REPO / "overleaf_package.zip"
+STYLE_FILES = (
+    "iclr2027_conference.sty",
+    "iclr2027_conference.bst",
+    "math_commands.tex",
+)
 
 FIGURE_PATTERN = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")
 INPUT_PATTERN = re.compile(r"\\input\{([^}]+)\}")
@@ -39,6 +44,19 @@ def source_date_epoch() -> int:
             text=True,
         ).strip()
     )
+
+
+def tectonic_binary() -> str:
+    configured = os.environ.get("TECTONIC_BIN")
+    if configured:
+        return configured
+    discovered = shutil.which("tectonic")
+    if discovered:
+        return discovered
+    local = Path.home() / ".local" / "bin" / "tectonic"
+    if local.exists():
+        return str(local)
+    raise RuntimeError("Tectonic 0.16.9 is required to verify the package")
 
 
 def resolve_figure(name: str) -> tuple[Path, Path]:
@@ -74,27 +92,43 @@ def prepare_tree(root: Path) -> list[Path]:
 
     write(Path("main.tex"), packaged_tex)
     copy(PAPER / "references.bib", Path("references.bib"))
+    for name in STYLE_FILES:
+        copy(PAPER / name, Path(name))
 
-    for name in sorted(set(FIGURE_PATTERN.findall(source_tex))):
-        source, relative = resolve_figure(name)
-        copy(source, relative)
+    copied_inputs: set[Path] = set()
 
-    for name in sorted(set(INPUT_PATTERN.findall(source_tex))):
-        relative = Path(name)
-        source = PAPER / relative
-        if not source.exists():
-            raise FileNotFoundError(f"Missing referenced input: {name}")
-        copy(source, relative)
+    def copy_dependencies(content: str) -> None:
+        for name in sorted(set(FIGURE_PATTERN.findall(content))):
+            source, relative = resolve_figure(name)
+            if relative not in files:
+                copy(source, relative)
+
+        for name in sorted(set(INPUT_PATTERN.findall(content))):
+            relative = Path(name)
+            if relative.suffix == "":
+                relative = relative.with_suffix(".tex")
+            if relative in copied_inputs:
+                continue
+            source = PAPER / relative
+            if not source.exists():
+                raise FileNotFoundError(f"Missing referenced input: {name}")
+            copied_inputs.add(relative)
+            input_content = source.read_text()
+            write(relative, input_content)
+            copy_dependencies(input_content)
+
+    copy_dependencies(source_tex)
 
     readme = """OVERLEAF UPLOAD PACKAGE
 
 1. Upload this zip as a new Overleaf project.
 2. Set main.tex as the Main document if Overleaf does not detect it.
-3. Compiler: pdfLaTeX (Overleaf default).
+3. Compiler: pdfLaTeX (Overleaf default). The repository's local verification
+   build uses the pinned Tectonic 0.16.9 engine.
 4. Bibliography: references.bib; BibTeX runs automatically.
 
-The figures and table fragments are generated artifacts from:
-https://github.com/juaAI/aiweather-extremes
+The figures and table fragments are generated artifacts included in this
+anonymous supplementary package.
 """
     write(Path("README.txt"), readme)
     return sorted(files)
@@ -104,7 +138,7 @@ def compile_tree(root: Path, epoch: int) -> Path:
     env = os.environ.copy()
     env["SOURCE_DATE_EPOCH"] = str(epoch)
     subprocess.run(
-        ["tectonic", "--keep-logs", "main.tex"],
+        [tectonic_binary(), "--keep-logs", "main.tex"],
         cwd=root,
         env=env,
         check=True,
@@ -117,10 +151,10 @@ def compile_tree(root: Path, epoch: int) -> Path:
         raise RuntimeError("Tectonic did not produce main.pdf")
     log = (root / "main.log").read_text()
     forbidden = (
-        "LaTeX Warning",
         "Undefined control sequence",
         "Overfull \\hbox",
-        "Underfull \\hbox",
+        "There were undefined references",
+        "There were undefined citations",
     )
     errors = [needle for needle in forbidden if needle in log]
     if errors:

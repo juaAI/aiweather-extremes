@@ -1,7 +1,7 @@
 """Headline skill at matched lead pools for Track A and Track B.
 
-Track A wind/temp: 6–48 h 6-hourly (all models; AIFS/Aurora cadence).
-Track A solar: 1–48 h hourly (no AIFS/Aurora/ENS).
+Track A wind/temp: 6–48 h 6-hourly (all models; AIFS/AIFS ENS/Aurora cadence).
+Track A solar: 1–48 h hourly (no AIFS/AIFS ENS/Aurora/ENS).
 Track A companion: 1–12 h hourly for models with hourly output.
 Track B: 1–48 h hourly and 1–12 h hourly (all models hourly; +ICON-EU).
 
@@ -55,6 +55,7 @@ TRACKS = {
             "ept2_hrrr",
             "ept2_e",
             "ept2_reasoning",
+            "aifs_ens",
             "aifs",
             "aurora",
             "ecmwf_ifs_single",
@@ -73,13 +74,13 @@ TRACKS = {
             "icon_global",
         ],
         "scopes": {
-            # Wind/temp primary pool (6-hourly cadence of AIFS/Aurora).
+            # Wind/temp primary pool (6-hourly cadence of AIFS/AIFS ENS/Aurora).
             "h6_48": [h * 60 for h in range(6, 49, 6)],
             # Solar primary pool — hourly from 1 h (Helios's short-range edge).
             "h1_48": list(range(60, 48 * 60 + 1, 60)),
             "h1_12": list(range(60, 12 * 60 + 1, 60)),
         },
-        # AIFS/Aurora only on 6-hourly scopes; skip them on hourly pools.
+        # AIFS/AIFS ENS/Aurora only on 6-hourly scopes.
         "wt_models_by_scope": {
             "h6_48": None,  # all wt_models
             "h1_48": [
@@ -103,7 +104,7 @@ TRACKS = {
                 "ecmwf_ens",
             ],
         },
-        # Wind/temp headlines: 6–48 h; 1–12 h companion (no AIFS/Aurora).
+        # Wind/temp headlines: 6–48 h; 1–12 h companion (no six-hourly AI).
         "wt_scopes": ["h6_48", "h1_12"],
         # Solar: hourly pools only.
         "solar_scopes": ["h1_48", "h1_12"],

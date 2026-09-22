@@ -43,10 +43,10 @@ CONFIG = yaml.safe_load((PROJECT_ROOT / "config" / "matrix.yaml").read_text())
 VARIABLE = "precipitation_amount_sum_1h"
 INIT_HOURS = [0, 6, 12, 18]
 
-# Verified against /v1/forecast/data: aifs and aurora return HTTP 422 for
-# precipitation (they do not produce the variable at all), and the ensemble
-# models return an empty body unless members are requested explicitly.
-NO_PRECIP = {"aifs", "aurora"}
+# Deterministic AIFS and Aurora do not expose precipitation. AIFS ENS does,
+# but its accumulation follows the six-hour model step and is not an isolated
+# hourly value, so it is excluded from this hourly gauge comparison.
+NO_PRECIP = {"aifs", "aifs_ens", "aurora"}
 ENSEMBLE_MODELS = {"ept2_1_europa", "ept2_hrrr", "ept2_e", "ecmwf_ens"}
 
 BASE_URL = os.environ.get("JUA_API_BASE", "http://localhost:12880").rstrip("/")

@@ -1,1 +1,8 @@
-{"rows": 80618, "self_test": "PASS"}
+{
+  "rows": 72472,
+  "self_test": "PASS",
+  "precipitation_source": "data/derived/precip_aggregates_compact.parquet",
+  "preserved_precip_rows": 16246,
+  "preserved_from_sha256": "bfacf87bb1f4870914383afbf23e42ddf1a287bb3edfc603b09deeb146d5f9bf",
+  "preserved_validation": "PASS"
+}

@@ -12,6 +12,7 @@ models:
   ept2_hrrr:        {family: jua,      training: diffusion,   output: ensemble,      domain: regional}
   ept2_e:           {family: jua,      training: regression,  output: ensemble,      domain: global}
   ept2_reasoning:   {family: jua,      training: regression,  output: deterministic, domain: global}
+  aifs_ens:         {family: external, training: proper_score, output: ensemble,      domain: global}
   aifs:             {family: external, training: regression,  output: deterministic, domain: global}
   aurora:           {family: external, training: regression,  output: deterministic, domain: global}
   ecmwf_ifs_single: {family: physics,  training: physics,     output: deterministic, domain: global}
@@ -33,6 +34,7 @@ tracks:
       - ept2_hrrr
       - ept2_e
       - ept2_reasoning
+      - aifs_ens
       - aifs
       - aurora
       - ecmwf_ifs_single
@@ -42,10 +44,8 @@ tracks:
   # Regional showdown: diffusion regionals vs ICON-EU on its home domain.
   # March–June keeps four full months after ICON-EU is available and adds
   # denser spring/early-summer solar.
-  # ecmwf_ens is extracted for reference but deliberately excluded from every
-  # Track B presentation (paper figures, tables, and the web export): it is a
-  # global medium-range ensemble, not a regional model, so it is not part of
-  # the regional cohort.
+  # Track B is restricted to regional models plus the deterministic IFS
+  # reference; global ensembles remain in Track A.
   track_b:
     start: "2026-03-01T00:00:00Z"
     end: "2026-07-01T00:00:00Z"
@@ -55,7 +55,6 @@ tracks:
       - ept2_hrrr
       - icon_eu
       - ecmwf_ifs_single
-      - ecmwf_ens
 
 # "NO" must stay quoted: bare NO is YAML-1.1 boolean false.
 countries: [DE, FR, GB, ES, IT, PL, NL, BE, CH, "NO", AT, CZ, DK]

@@ -45,7 +45,11 @@ BUCKET_TEX = {
     "gt_q95": "$>$P95",
 }
 BUCKETS = ["all", "lt_q5", "q5_q25", "q25_q75", "q75_q95", "gt_q95"]
-SOLAR_ORDER = ["ept2_1_helios", *MODEL_ORDER]
+SOLAR_ORDER = ["ept2_1_helios"] + [
+    model
+    for model in MODEL_ORDER
+    if model not in ("aifs", "aifs_ens", "aurora", "ecmwf_ens")
+]
 TRACK_B_MODELS = ["ept2_1_europa", "ept2_hrrr", "icon_eu"]
 SOLAR_B_MODELS = ["ept2_1_helios", "ept2_1_europa", "ept2_hrrr", "icon_eu"]
 
@@ -59,6 +63,7 @@ SHORT = {
     "ept2_e": "EPT-2e",
     "aurora": "Aurora",
     "aifs": "AIFS",
+    "aifs_ens": "AIFS ENS",
     "ecmwf_ens": "ENS",
     "noaa_gfs_single": "GFS",
     "icon_global": "ICON Global",
@@ -184,7 +189,7 @@ def table_solar_leads() -> None:
     )
     _lead_table(
         df,
-        leads=[1, 6, 12, 24, 48],
+        leads=[6, 12, 24, 48],
         b1="q5_q25",
         b1_label="Ovc.",
         models=order,
@@ -268,6 +273,159 @@ def table_track_b_bars() -> None:
     shutil.copy(TABLES / "t3_track_b_wind_148.tex", TABLES / "t3_track_b.tex")
 
 
+def _skill_value(
+    df: pl.DataFrame,
+    model: str,
+    variable: str,
+    bucket: str,
+    *,
+    scope: str = "h6_48",
+    debias: bool = True,
+) -> float | None:
+    row = df.filter(
+        (pl.col("track") == "track_a")
+        & (pl.col("model") == model)
+        & (pl.col("variable") == variable)
+        & (pl.col("obs_bucket") == bucket)
+        & (pl.col("lead_scope") == scope)
+        & (pl.col("kind") == "skill_pct")
+        & (pl.col("debias") == debias)
+        & pl.col("country").is_null()
+    )
+    return None if row.is_empty() else row["value"][0]
+
+
+def _tail_penalty_value(
+    df: pl.DataFrame, model: str, variable: str, debias: bool = True
+) -> tuple[float | None, float | None]:
+    row = df.filter(
+        (pl.col("track") == "track_a")
+        & (pl.col("model") == model)
+        & (pl.col("variable") == variable)
+        & (pl.col("kind") == "tail_penalty")
+        & (pl.col("lead_scope") == "h6_48")
+        & (pl.col("debias") == debias)
+        & pl.col("country").is_null()
+    )
+    if row.is_empty():
+        return None, None
+    return row["value"][0], row["skill_se"][0]
+
+
+def table_tail_robustness() -> None:
+    climatology = pl.read_parquet(DERIVED / "final_aggregates_climatology.parquet")
+    window = pl.read_parquet(DERIVED / "final_aggregates_window_matched.parquet")
+    models = [
+        model
+        for model in MODEL_ORDER
+        if model != REFERENCE
+        and model in climatology["model"].unique().to_list()
+    ]
+    for variable, tag in ((WIND, "wind"), (TEMP, "temp")):
+        lines = [
+            "\\begin{tabular}{@{}lrrrrr@{}}",
+            "\\toprule",
+            "Model & Raw all & Raw $>$P95 & Corrected all & Corrected $>$P95 & Tail $-$ all \\\\",
+            "\\midrule",
+        ]
+        for model in models:
+            raw_all = _skill_value(
+                climatology, model, variable, "all", debias=False
+            )
+            raw_tail = _skill_value(
+                climatology, model, variable, "gt_q95", debias=False
+            )
+            corrected_all = _skill_value(climatology, model, variable, "all")
+            corrected_tail = _skill_value(
+                climatology, model, variable, "gt_q95"
+            )
+            penalty, penalty_se = _tail_penalty_value(
+                climatology, model, variable
+            )
+            if all(
+                value is None
+                for value in (raw_all, raw_tail, corrected_all, corrected_tail)
+            ):
+                continue
+            lines.append(
+                f"{_model_label(model, short=True)} & "
+                + " & ".join(
+                    _fmt(value)
+                    for value in (
+                        raw_all,
+                        raw_tail,
+                        corrected_all,
+                        corrected_tail,
+                    )
+                )
+                + " & "
+                + _fmt(penalty, penalty_se)
+                + " \\\\"
+            )
+        lines += ["\\bottomrule", "\\end{tabular}"]
+        _write(f"t7_tail_robustness_{tag}.tex", lines)
+
+    lines = [
+        "\\begin{tabular}{@{}lrrrrrr@{}}",
+        "\\toprule",
+        " & \\multicolumn{2}{c}{Wind $>$P95} & "
+        "\\multicolumn{2}{c}{Temperature $>$P95} & "
+        "\\multicolumn{2}{c}{Temperature $<$P5} \\\\",
+        "\\cmidrule(lr){2-3}\\cmidrule(lr){4-5}\\cmidrule(lr){6-7}",
+        "Model & Clim. & Window & Clim. & Window & Clim. & Window \\\\",
+        "\\midrule",
+    ]
+    for model in models:
+        values = (
+            _skill_value(climatology, model, WIND, "gt_q95"),
+            _skill_value(window, model, WIND, "gt_q95"),
+            _skill_value(climatology, model, TEMP, "gt_q95"),
+            _skill_value(window, model, TEMP, "gt_q95"),
+            _skill_value(climatology, model, TEMP, "lt_q5"),
+            _skill_value(window, model, TEMP, "lt_q5"),
+        )
+        if all(value is None for value in values):
+            continue
+        lines.append(
+            f"{_model_label(model, short=True)} & "
+            + " & ".join(_fmt(value) for value in values)
+            + " \\\\"
+        )
+    lines += ["\\bottomrule", "\\end{tabular}"]
+    _write("t8_threshold_sensitivity.tex", lines)
+
+def table_station_counts() -> None:
+    path = DERIVED / "station_climatology_thresholds_era5_1991_2020.parquet"
+    if not path.exists():
+        print("skip station counts (threshold source unavailable)")
+        return
+    counts = (
+        pl.scan_parquet(path)
+        .filter(pl.col("variable").is_in([WIND, TEMP]))
+        .select("country", "station")
+        .unique()
+        .group_by("country")
+        .agg(pl.col("station").n_unique().alias("stations"))
+        .sort("country")
+        .collect()
+    )
+    lines = [
+        "\\begin{tabular}{@{}lr@{}}",
+        "\\toprule",
+        "Country & Stations with fixed thresholds \\\\",
+        "\\midrule",
+    ]
+    for row in counts.iter_rows(named=True):
+        lines.append(f"{row['country']} & {row['stations']:,} \\\\")
+    lines += [
+        "\\midrule",
+        f"Total & {counts['stations'].sum():,} \\\\",
+        "\\bottomrule",
+        "\\end{tabular}",
+    ]
+    _write("t10_station_counts.tex", lines)
+
+
 def main() -> None:
     a = pl.read_parquet(_derived("headline_skill_track_a"))
     # Track A: wind/temp 6–48 h (all models); solar 1–48 h hourly.
@@ -282,6 +440,8 @@ def main() -> None:
     table_wt_leads()
     table_track_b_bars()
     table_track_b_leads()
+    table_tail_robustness()
+    table_station_counts()
     print("done")
 
 

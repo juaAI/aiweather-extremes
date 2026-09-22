@@ -25,10 +25,10 @@ import requests
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CACHE_DIR = PROJECT_ROOT / "data" / "cache"
 
-# Both are provided with Jua platform access (https://jua.ai). No defaults:
-# extraction requires credentials; the included aggregates data does not.
-QE_BASE_URL = os.environ.get("JUA_API_BASE", "")
-API_KEY = os.environ.get("JUA_API_KEY", "")
+# Extraction requires query-service credentials; rebuilding from the included
+# compact aggregates does not.
+QE_BASE_URL = os.environ.get("QE_BASE_URL", "")
+API_KEY = os.environ.get("QE_API_KEY", "")
 
 TIMEOUT_S = 300.0
 
@@ -50,8 +50,8 @@ class QEClient:
     ):
         if not base_url or not api_key:
             raise RuntimeError(
-                "Extraction requires Jua API access: set JUA_API_BASE and "
-                "JUA_API_KEY. The included aggregates data reproduces all "
+                "Extraction requires query-service access: set QE_BASE_URL and "
+                "QE_API_KEY. The included aggregates data reproduces all "
                 "tables and figures without API access."
             )
         self.base_url = base_url.rstrip("/")

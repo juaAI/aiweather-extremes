@@ -55,6 +55,7 @@ WT_MODELS = [
     "ept2_1_europa",
     "ept2_hrrr",
     "ept2_reasoning",
+    "aifs_ens",
     "aurora",
     "aifs",
     "icon_global",

@@ -48,6 +48,7 @@ TRACKS = {
             "ept2_hrrr",
             "ept2_e",
             "ept2_reasoning",
+            "aifs_ens",
             "aifs",
             "aurora",
             "ecmwf_ifs_single",
@@ -55,7 +56,7 @@ TRACKS = {
             "icon_global",
             "ecmwf_ens",
         ],
-        # 6-hourly pool matches Track A cross-model cadence (AIFS/Aurora).
+        # 6-hourly pool matches Track A AIFS/AIFS ENS/Aurora cadence.
         "leads": [h * 60 for h in range(6, 49, 6)],
         "out": DERIVED / "wt_headline_skill_track_a.parquet",
     },

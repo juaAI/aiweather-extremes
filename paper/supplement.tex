@@ -1,0 +1,202 @@
+\section{Model and data details}\label{app:details}
+
+\subsection{Forecast systems}
+Table~\ref{tab:models} lists the systems. All reported results are out of
+sample with respect to model development. IFS, AIFS, and AIFS ENS changed
+operational versions on 12 May 2026 \citep{ecmwf2026cycle50r1}; the analysis
+treats each named product as one system and does not isolate version effects.
+
+\begin{table}[h]
+\caption{Forecast systems. Ensemble systems are evaluated through their
+means. ICON-EU appears only in Track B; Helios only in the solar comparison.}
+\label{tab:models}
+\centering\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llll}
+\toprule
+Model & Class & Output & Domain \\
+\midrule
+ECMWF IFS (reference) & physical & deterministic & global \\
+ECMWF ENS & physical & ensemble & global \\
+NOAA GFS & physical & deterministic & global \\
+DWD ICON Global & physical & deterministic & global \\
+DWD ICON-EU & physical & deterministic & regional \\
+ECMWF AIFS & regression AI & deterministic & global \\
+ECMWF AIFS ENS & proper-score AI & 51-member ensemble & global \\
+Microsoft Aurora & regression AI & deterministic & global \\
+Jua EPT-2 Reasoning & regression AI & deterministic & global \\
+Jua EPT-2e & regression AI & ensemble & global \\
+Jua EPT-2 HRRR & generative AI & ensemble & regional \\
+Jua EPT-2.1 Europa & generative AI & ensemble & regional \\
+Jua EPT-2.1 Helios & solar AI & deterministic & regional \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{Station panel and tracks}
+The scored synoptic panel consists of the 667 stations for which fixed ERA5
+thresholds are available. Country counts are in
+Table~\ref{tab:stationcounts}; the full station catalogue shown in
+Figure~\ref{fig:network} is larger and is not the scored count.
+
+\begin{table}[h]
+\caption{Synoptic stations contributing to the fixed-climatology analysis.}
+\label{tab:stationcounts}
+\centering\small\input{tables/t10_station_counts.tex}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=.63\textwidth]{fig1_station_network.png}
+\caption{Full station catalogues available to the verification system. Only
+stations with fixed climatological thresholds enter the reported wind and
+temperature regimes; the solar catalogue is likewise larger than its scored
+regime panel.}
+\label{fig:network}
+\end{figure}
+
+Track A covers 1 September 2025--30 June 2026 over DE, FR, GB, ES, IT, PL,
+NL, BE, CH, NO, AT, CZ, and DK. It uses all four daily initialization cycles
+and the common six-hourly lead grid from 6 to 48\,h. Track B covers
+March--June 2026 and compares the regional systems on their common hourly
+lead grid.
+
+Solar radiation uses hourly leads from 1 to 48\,h. Regime-stratified results
+use 543 stations with fixed thresholds in BE, CH, DE, DK, ES, FR, IT, NL, and
+NO. Austrian catalogue stations were not part of the frozen score extraction;
+GB and PL are absent, and CZ lacks fixed solar thresholds. Spain contributes
+one station through March 2026, and Italian coverage ends after February.
+
+\subsection{Observed-value regimes}
+For each station, calendar day, and UTC hour, ERA5 P5, P25, P75, and P95 are
+estimated over 1991--2020 with a cyclic $\pm15$-day window. The five regimes
+are assigned from the verifying observation. Because they follow the
+day-of-year climatology, they represent local anomalies rather than fixed
+physical severity.
+
+\section{Complete Track A results}\label{app:tracka}
+
+\begin{table}[h]
+\caption{Bias-corrected Track A MAE skill (\%) against IFS, 6--48\,h, by
+wind regime. Parentheses give leave-one-month-out jackknife standard errors.}
+\label{tab:skillwind}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t1_skill_wind.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{Bias-corrected Track A MAE skill (\%) against IFS, 6--48\,h, by
+temperature regime.}
+\label{tab:skilltemp}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t1_skill_temp.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{Bias-corrected Track A solar MAE skill (\%) against IFS,
+1--48\,h, by regime.}
+\label{tab:skillsolar}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t1_skill_solar.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{Track A MAE skill (\%) by lead for 10\,m wind.}
+\label{tab:leadwind}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t2_perlead_wind.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{Track A MAE skill (\%) by lead for 2\,m temperature.}
+\label{tab:leadtemp}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t2_perlead_temp.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{Track A MAE skill (\%) by lead for solar radiation.}
+\label{tab:leadsolar}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t2_perlead_solar.tex}}
+\end{table}
+
+\section{Robustness checks}\label{app:robustness}
+
+\subsection{Raw and corrected forecasts}
+Tables~\ref{tab:robustwind} and \ref{tab:robusttemp} show that the
+domain-mean correction materially changes wind-tail rankings and reverses the
+sign of the AIFS temperature-tail comparison. The tail-minus-all column is
+the direct test used in the main paper.
+
+\begin{table}[h]
+\caption{Track A wind MAE skill (\%): raw and bias-corrected all-condition and
+$>$P95 values. Tail $-$ all is computed after correction; parentheses give
+its monthly jackknife standard error.}
+\label{tab:robustwind}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t7_tail_robustness_wind.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{As Table~\ref{tab:robustwind}, for temperature.}
+\label{tab:robusttemp}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t7_tail_robustness_temp.tex}}
+\end{table}
+
+\subsection{Threshold definition}
+The variants use the same forecast pairs but different regime constructions.
+The fixed definition uses station--day--hour anomaly thresholds; the
+in-window definition uses one country-level percentile distribution over
+stations and times and therefore selects absolute tails. The large
+climatological lower-temperature-tail losses of several learned systems
+collapse under the in-window definition, and several tail-minus-all signs
+also change.
+
+\begin{table}[h]
+\caption{Bias-corrected tail skill (\%) under fixed 1991--2020 climatological
+thresholds (Clim.) and percentiles of the evaluation window (Window).}
+\label{tab:thresholdsensitivity}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t8_threshold_sensitivity.tex}}
+\end{table}
+
+\section{Regional and country-level results}\label{app:regional}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=.9\textwidth]{fig8b_track_b_bars.png}
+\caption{Track B bias-corrected MAE skill against IFS by
+observation-conditioned regime, March--June 2026, 1--48\,h. Uncertainty uses
+four monthly blocks.}
+\label{fig:trackbbars}
+\end{figure}
+
+\begin{table}[h]
+\caption{Track B wind MAE skill (\%), 1--48\,h, by regime.}
+\label{tab:trackbwind}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t3_track_b_wind_148.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{Track B temperature MAE skill (\%), 1--48\,h, by regime.}
+\label{tab:trackbtemp}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t3_track_b_temp_148.tex}}
+\end{table}
+
+\begin{table}[h]
+\caption{Track B solar MAE skill (\%), 1--48\,h, by regime.}
+\label{tab:trackbsolar}
+\centering\small\resizebox{\textwidth}{!}{\input{tables/t3_track_b_solar_148.tex}}
+\end{table}
+
+\section{Additional methodological details}\label{app:method}
+
+For each model, valid week, initialization hour, and lead, the additive
+correction is estimated by pooling station errors from the preceding four
+valid weeks. It is one Europe-wide scalar, not a station-specific correction.
+Regime labels depend only on the observation and are unchanged by correction.
+
+If $\hat S$ is the full estimate and $\hat S_{(-j)}$ omits month $j$, the
+reported standard error is
+\[
+\operatorname{SE}_{\mathrm{JK}} =
+\sqrt{\frac{M-1}{M}\sum_{j=1}^{M}
+\left(\hat S_{(-j)}-\overline{\hat S}_{(-\cdot)}\right)^2}.
+\]
+MAE is pooled linearly by sample count in both the point estimate and each
+leave-one-month-out replicate. Track A has $M=10$ and Track B $M=4$.
+These values describe sensitivity to months; they are not exact confidence
+intervals and do not capture country-level dependence.
