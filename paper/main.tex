@@ -46,484 +46,345 @@ Jua.ai AG\\
 
 \begin{document}
 \maketitle
-
 \begin{abstract}
   AI weather models are often reported to underestimate extremes, but most
   evidence concerns deterministic regression models verified against
   reanalysis. We evaluate twelve physical and AI forecast models against
   ECMWF IFS using ten months of European station observations. The
   evaluation covers 10\,m wind, 2\,m temperature, solar radiation, and
-  precipitation, with observed-value regimes defined from a fixed ERA5
-  1991--2020 climatology and skill computed on matched samples. We find no
-  uniform AI-specific deficit in the tails. Several AI models remain more
-  accurate than IFS under extreme conditions, while others deteriorate
-  markedly; comparable variation is present among physical models. These
-  model-specific differences persist across variables and supporting
-  lead-time and regional comparisons. At the same time, every model exhibits
-  a common observation-conditioned error pattern, overpredicting low values
-  and underpredicting high values. Attenuation of extreme observations
-  therefore does not imply a uniform loss of relative skill: performance in
-  the tails depends on the individual model, variable, and evaluation
-  setting rather than on whether a forecast is produced by AI or physical
-  numerical modelling.
+  precipitation within regimes defined from a fixed ERA5 1991--2020
+  climatology. We find no uniform AI-specific deficit in the tails. Several
+  AI models remain more accurate than IFS under extreme conditions, while
+  others deteriorate markedly; comparable variation occurs among physical
+  models. Every model nevertheless exhibits a common conditional-error
+  pattern, overpredicting low observations and underpredicting high
+  observations. Attenuation of extreme values therefore does not imply a
+  uniform loss of relative skill: tail performance depends on the model,
+  variable, and evaluation setting rather than on whether the forecast is
+  produced by AI or physical numerical modelling.
   \end{abstract}
-
-\section{Introduction}
-
-Data-driven weather models now outperform operational physical models on
-many standard forecast metrics
-\citep{bi2023pangu,lam2023graphcast,bouallegue2024rise}. Their performance
-at extremes, however, remains an open concern. Models trained with
-mean-squared error tend towards the conditional mean, which can smooth
-sharp gradients and attenuate rare events
-\citep{olivetti2024,bonavita2024limitations}. Existing evaluations support
-this concern, reporting underestimated peak winds, hot and windy tails,
-and record-breaking events
-\citep{charltonperez2024,olivetti2024extremes,zhang2026records}.
-
-The available evidence has two important limitations. First, it is
-dominated by first-generation deterministic regression models. Generative
-ensembles, probabilistically trained models, and high-resolution regional
-AI models have received much less attention. Second, most studies verify
-forecasts against reanalysis rather than direct station observations.
-Whether their conclusions extend to newer model classes and independent
-in situ measurements is therefore unclear.
-
-Two questions are often conflated in this discussion: whether forecasts
-systematically attenuate extreme observations, and whether AI models are
-less accurate than physical models under the same conditions. The first
-concerns absolute forecast error; the second concerns relative skill. A
-model may underestimate an extreme event while still producing a smaller
-error than its physical counterpart.
-
-We examine these questions using thirteen forecast models, including ECMWF
-IFS as the reference. Forecasts are verified over ten months against
-European synoptic, solar-radiation, and rain-gauge observations. The
-evaluation covers 10\,m wind, 2\,m temperature, hourly solar radiation,
-and hourly precipitation at lead times up to 48\,h. Models are compared
-both overall and within regimes defined by the observed value relative to
-a fixed 1991--2020 climatology.
-
-Throughout the paper, ``extreme'' refers to the tails of this local
-climatological distribution, principally observations below the 5th or
-above the 95th quantile. These regimes identify conditions that are
-unusual for a given location, calendar day, and UTC hour; they are not
-necessarily record-breaking or impact-defined events. Precipitation is
-treated separately within the same framework by distinguishing dry hours
-and quantiles of the wet-hour distribution
-\citep{zhang2011indices,perkins2013heatwaves}.
-
-The analysis reveals a common tendency among AI and physical models to
-overpredict low observations and underpredict high observations. Relative
-skill within those regimes, however, varies substantially by model and
-variable. This distinction is central: attenuation of extreme values does
-not imply a uniform AI-specific deficit relative to physical forecasting.
-
-The study makes three contributions:
-
-\begin{itemize}
-\item It extends station-based evaluation of weather extremes to
-deterministic regression models, a CRPS-trained global ensemble, and
-high-resolution regional generative models.
-
-\item It separates relative MAE within climatological regimes from the
-conditional forecast errors observed in those regimes.
-
-\item It tests whether these patterns persist across four surface
-variables, forecast lead times, countries, and model classes, with
-additional categorical evaluation of heavy precipitation.
-\end{itemize}
-
-Section~\ref{sec:data} describes the verification protocol.
-
-\section{Related work}
-\label{sec:related}
-
-Evaluations of early AI weather models report competitive average skill
-alongside attenuated extremes. FourCastNet, Pangu-Weather, and GraphCast
-underestimated peak winds during storm Ciar\'an despite reproducing its
-track and central pressure \citep{charltonperez2024}. Broader studies
-similarly identify deficits in hot, windy, and record-breaking events,
-particularly at longer lead times
-\citep{olivetti2024extremes,zhang2026records}. These errors have been
-linked to reduced effective resolution and the suppression of
-sub-synoptic variability \citep{bonavita2024limitations}. However,
-station-based evidence suggests a more qualified picture: performance can
-remain competitive for moderate extremes while degrading for the most
-intense events \citep{bouallegue2024rise}. Existing evidence is therefore
-concentrated on deterministic regression models evaluated primarily
-against reanalysis.
-
-Recent work indicates that attenuation may depend on the training
-objective rather than on data-driven forecasting itself. The grid-point
-mean-squared-error objective can produce a double penalty that reduces
-effective resolution, while amplitude-preserving objectives improve
-surface-wind extremes \citep{subich2025doublepenalty}. Diffusion-based
-models likewise preserve flow statistics that ensembles of regression
-models tend to suppress \citep{molinaro2024gencfd}. At weather scales,
-GenCast improves on the ECMWF ensemble for ERA5-defined extremes, and
-StormCast demonstrates generative modelling at convection-allowing
-resolution \citep{price2024gencast,pathak2026stormcast}. Direct
-station-based comparisons across regression, probabilistic, generative,
-and physical models nevertheless remain limited.
-
-WeatherReal, MAUSAM, and StationBench provide observational benchmarks for
-data-driven weather forecasting
-\citep{jin2024weatherreal,gupta2025mausam,wagner2025stationbench}.
-Their results show that verification against reanalysis can overstate
-performance relative to in situ observations. We build on this work by
-comparing climatological tail skill across model classes using independent
-European station observations.
-
-\section{Methods}
-\label{sec:data}
-
-\subsection{Models}
-
-We evaluate twelve forecast models against the ECMWF IFS high-resolution
-deterministic forecast, which serves as the reference
-(Table~\ref{tab:models}). The comparison spans physical and AI models,
-global and regional domains, and deterministic and ensemble forecasts.
-
-The physical models are ECMWF ENS, NOAA GFS, DWD ICON Global, and DWD
-ICON-EU. The AI models comprise the global regression models ECMWF AIFS,
-Microsoft Aurora, and Jua EPT-2 Reasoning; the global ensembles ECMWF AIFS
-ENS and Jua EPT-2e; the regional generative ensembles Jua EPT-2 HRRR and
-EPT-2.1 Europa; and the solar-specialised regional model EPT-2.1 Helios
-\citep{lang2024aifs,bodnar2025aurora,molinaro2025ept2,
-lang2024aifscrps,jua2025hrrr,jua2026europadocs,jua2026helios}.
-AIFS ENS retains the AIFS architecture but is trained with a continuous
-ranked probability score objective and learned noise injection; it is
-evaluated as a 51-member ensemble. Related generative methodology is
-described by \citet{molinaro2026downscaling,molinaro2024gencfd}.
-
-Models are evaluated only for variables with compatible outputs.
-Precipitation is available from the physical models and from EPT-2
-Reasoning, EPT-2e, EPT-2 HRRR, and EPT-2.1 Europa. AIFS ENS is restricted
-to 10\,m wind and 2\,m temperature because its radiation and precipitation
-outputs cannot be matched to the hourly accumulations used for
-verification.
-
-\subsection{Station observations and evaluation}
-\label{sec:stations}
-
-\paragraph{Station data.}
-Forecasts are verified against three complementary in situ networks:
-
-\begin{itemize}
-\item \textbf{Synoptic:} quality-controlled observations of 10\,m wind and
-2\,m temperature.
-
-\item \textbf{Solar radiation:} hourly global horizontal irradiance from
-DWD, M\'et\'eo-France, MeteoSwiss, KNMI, RMI, DMI, MET Norway (Frost),
-GeoSphere Austria, SMHI, FMI, BSRN, and ARPA Lombardia.
-
-\item \textbf{Precipitation:} hourly accumulations from 4{,}005 rain gauges
-operated by DWD, M\'et\'eo-France, MET Norway, AEMET, GeoSphere Austria,
-the UK Met Office, KNMI, RMI, CHMI, DMI, and MeteoSwiss. This separate
-network is required because the synoptic feed does not provide usable
-hourly precipitation accumulations.
-\end{itemize}
-
-The evaluation covers thirteen countries: DE, FR, GB, ES, IT, PL, NL, BE,
-CH, NO, AT, CZ, and DK. The precipitation network excludes Italy and
-Poland. Forecasts are bilinearly interpolated to observation locations
-\citep{molinaro2026downscaling}. Precipitation is scored only at gauges
-within each model's domain, and regional comparisons use a common gauge
-sample within each evaluation cell.
-
-None of the Jua models was trained or fine-tuned on these observations.
-Historical station errors enter the evaluation only through the causal
-bias correction described in Section~\ref{sec:debias}.
-
-\paragraph{Evaluation tracks.}
-Two tracks account for differences in model availability and output
-cadence.
-
-\begin{itemize}
-\item \textbf{Track A} covers 1 September 2025 to 30 June 2026. Wind and
-temperature are evaluated for IFS and the ten comparator models available
-throughout this period; ICON-EU is reserved for Track~B. Leads range from
-6 to 48\,h at 6-hourly intervals, matching the cadence of AIFS, AIFS ENS,
-and Aurora.
-
-Solar radiation is evaluated over the same period at hourly leads from
-1 to 48\,h. EPT-2.1 Helios is included, while AIFS, AIFS ENS, Aurora, and
-ECMWF ENS are omitted because they lack compatible hourly solar output.
-The solar network contains no stations in GB, ES, or PL. Italian coverage,
-provided mainly by ARPA Lombardia, ends in February 2026; subsequent solar
-results therefore exclude Italy.
-
-Precipitation is evaluated from 1 to 48\,h for models with compatible
-output. Hourly models contribute at every lead, whereas ECMWF ENS
-contributes only at its native 6-hourly cadence.
-
-\item \textbf{Track B} covers 1 March to 30 June 2026 and compares
-EPT-2.1 Europa, EPT-2 HRRR, and ICON-EU over a common hourly lead grid
-from 1 to 48\,h. All four variables are evaluated, with EPT-2.1 Helios
-additionally included for solar radiation.
-\end{itemize}
-
-\subsection{Observed-value regimes}
-\label{sec:thresholds}
-
-Regimes are defined from the fixed 1991--2020 ERA5 climatology
-\citep{hersbach2020era5}, independently of the evaluation period. ERA5
-fields are bilinearly interpolated from the \(0.25^\circ\) grid to each
-station. For each station, calendar day, and UTC hour, the reference
-distribution comprises values from a cyclic \(\pm15\)-day window over the
-30-year period. This yields 930 values before variable-specific
-conditioning and preserves seasonal and diurnal variability.
-
-Wind and temperature use the complete reference distribution. Solar
-radiation and precipitation require additional conditioning because both
-contain a structural mass at zero. Solar thresholds are estimated from
-positive daytime GHI. For precipitation, observations below \(0.1\)~mm
-form a separate dry regime, and the remaining thresholds are estimated
-from wet hours.
-
-Let \(q_\alpha(s,d,h)\) denote the \(\alpha\)-quantile of the relevant
-reference distribution at station \(s\), calendar day \(d\), and UTC hour
-\(h\). Wind, temperature, and solar radiation use \(q_{0.05}\),
-\(q_{0.25}\), \(q_{0.75}\), and \(q_{0.95}\). Precipitation uses
-\(q_{0.50}^{\mathrm{wet}}\), \(q_{0.75}^{\mathrm{wet}}\), and
-\(q_{0.95}^{\mathrm{wet}}\). We omit the dependence on station, day, and
-hour below.
-
-Each forecast--observation pair is assigned to a regime according to its
-observed value \(y\), so membership is identical across models and lead
-times. Tables~\ref{tab:regimes} and \ref{tab:precipregimes} give the
-corresponding intervals and meteorological labels.
-
-The use of a fixed local climatology follows established practice in the
-climate-extremes literature
-\citep{zhang2011indices,kleintank2009guidelines,
-perkins2013heatwaves,perkins2015review}; the 1991--2020 period follows the
-WMO climate-normal convention. Conditioning precipitation quantiles on
-wet hours is consistent with ETCCDI wet-day indices such as R95p.
-
-Because thresholds are estimated independently of the evaluation period,
-observed regime frequencies need not equal their nominal probabilities.
-Moreover, ERA5 grid-cell values have lower spatial variance than point
-observations, producing broader wind and solar tails than a station-based
-climatology. The primary regimes of interest are the upper wind and
-temperature tails, both solar tails, and the upper wet-hour precipitation
-tail.
-
-\subsection{Bias correction}
-\label{sec:debias}
-
-We apply a causal rolling bias correction before computing the reported
-scores. For wind, temperature, and daytime solar radiation, the correction
-is additive. Let \(w\) denote a valid week, \(h\) the UTC hour, and
-\(\mathcal{D}_{w,h}\) the matched forecast--observation pairs at hour \(h\)
-during the preceding four weeks. For model \(m\),
-\begin{equation}
-\bar b_{m,w,h}
-=
-\frac{1}{|\mathcal{D}_{w,h}|}
-\sum_{(f_m,y)\in\mathcal{D}_{w,h}}(f_m-y),
-\qquad
-\widetilde f_m(t)=f_m(t)-\bar b_{m,w,h(t)}.
-\end{equation}
-The estimate is pooled across European stations and does not depend on
-initialisation or lead time. It is estimated separately for each model,
-and the same shift is applied to every ensemble member, preserving spread.
-
-An additive correction is unsuitable for precipitation because the
-distribution is zero-bounded and strongly right-skewed. Let
-\(\mathcal{P}_w\) contain precipitation forecasts and observations from the
-preceding four weeks, pooled across initialisation hours and lead times.
-Forecasts valid during week \(w\) are corrected by
-\begin{equation}
-a_{m,w}
-=
-\operatorname{clip}_{[0.33,\,3]}
-\left(
-\frac{\sum_{\mathcal{P}_w}y}
-     {\sum_{\mathcal{P}_w}f_m}
-\right),
-\qquad
-\widetilde f_m(t)=a_{m,w}f_m(t).
-\end{equation}
-This multiplicative correction adjusts systematic wet or dry amount biases
-while preserving zero forecasts.
-
-Both corrections use only information available before the valid week.
-Because regimes are assigned from observations, the correction does not
-alter regime membership. It removes recent mean bias but does not force
-the conditional bias within each regime to vanish.
-
-\subsection{Skill, lead times, and aggregation}
-\label{sec:aggregation}
-
-Let \(m\) denote a forecast model and \(c\) an evaluation cell defined by
-track, country, variable, lead time, and regime. MAE skill relative to
-ECMWF IFS is
-\begin{equation}
-S_{m,c}
-=
-1-\frac{\operatorname{MAE}_{m,c}}
-        {\operatorname{MAE}_{\mathrm{IFS},c}}.
-\end{equation}
-Positive values indicate lower MAE than IFS. The numerator and denominator
-are computed from matched forecast--observation pairs, using a common
-intersection of available initialisations and the four daily cycles at
-00, 06, 12, and 18 UTC.
-
-Ensemble models are evaluated through their ensemble means. The analysis
-therefore compares point-forecast accuracy and does not assess ensemble
-spread or probabilistic calibration. Mean forecast-minus-observation error
-is also reported within each regime.
-
-Results are shown at 1, 6, 12, 24, and 48\,h where available and are also
-aggregated over the lead grid of each comparison. Track~A wind and
-temperature use 6-hourly leads from 6 to 48\,h. Track~A solar radiation,
-Track~B, and hourly precipitation models use hourly leads from 1 to
-48\,h. Lower-cadence models contribute only at their native leads; no
-temporal interpolation is applied.
-
-Uncertainty is estimated by a leave-one-month-out jackknife and reported
-as one standard error. For heavy precipitation, defined by exceedance of
-\(q_{0.95}^{\mathrm{wet}}\), we additionally report probability of
-detection, false-alarm ratio, critical success index, and frequency bias.
-These statistics are computed from forecast and observed exceedances
-pooled across gauges and lead times up to 48\,h.
-
-\section{Results}
-
-\subsection{Skill across the observed distribution}
-\label{sec:regimes}
-
-Figure~\ref{fig:bars} shows that relative skill in the tails does not
-follow a uniform AI--physical ordering. EPT-2.1 Europa leads the wind
-comparison overall and remains competitive with ICON Global at gale
-force. EPT-2 HRRR and EPT-2.1 Europa perform most strongly for
-temperature, including in the heat regime. By contrast, AIFS and AIFS ENS
-remain below IFS in the wind and temperature tails, despite the ensemble's
-improved performance near the centre of the distribution. The largest
-heat deficit belongs to the physical GFS model.
-
-Solar radiation exhibits a different pattern. EPT-2.1 Helios leads
-overall and under overcast and near-clear-sky conditions, but falls below
-IFS in the typical irradiance regime, where EPT-2 Reasoning performs most
-strongly. Its advantage is therefore concentrated in the tails rather
-than distributed uniformly across conditions.
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.72\textwidth]{fig3_headline_bars.png}
-\caption{Track~A MAE skill relative to ECMWF IFS by observed-value regime,
-with \(\pm1\) jackknife SE. Wind and temperature use 6--48\,h leads;
-solar radiation uses 1--48\,h.}
-\label{fig:bars}
-\end{figure}
-
-For precipitation, the clearest gains occur in the middle of the wet-hour
-distribution (Figure~\ref{fig:precipbars}). EPT-2 HRRR, EPT-2e, and
-EPT-2 Reasoning improve substantially on IFS from moderate through high
-rain, whereas the physical global models remain below the reference.
-These gains narrow at the heaviest intensities: EPT-2 Reasoning remains
-slightly ahead, EPT-2.1 Europa is close to IFS, and EPT-2 HRRR and EPT-2e
-fall slightly below it. Europa follows a distinct pattern, deriving much
-of its aggregate skill from dry hours while losing skill once
-precipitation occurs.
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.9\textwidth]{figp1_precip_bars.png}
-\caption{Track~A MAE skill relative to ECMWF IFS for hourly precipitation
-by observed-value regime over 1--48\,h, with \(\pm1\) jackknife SE.}
-\label{fig:precipbars}
-\end{figure}
-
-\subsection{Shared conditional-error pattern}
-\label{sec:fingerprint}
-
-Despite their differences in relative skill, all models exhibit the same
-conditional-error structure (Figure~\ref{fig:fingerprint}): low
-observations are overpredicted and high observations underpredicted. The
-variation across regimes is considerably larger than the spread between
-models and is present for all four variables. A shared tendency towards
-the centre of the observed distribution therefore coexists with
-model-specific differences in relative accuracy.
-
-Because the regimes are conditioned on the verifying observation, this
-pattern is not in itself evidence of model smoothing. Limited
-predictability, unresolved local variability, and observational or
-representativeness errors can produce the same structure.
-
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=0.9\textwidth]{fig6_fingerprint.png}
-\caption{Mean forecast-minus-observation error at 48\,h, conditioned on
-the observed-value regime after bias correction. The grey envelope spans
-all models. ECMWF IFS, EPT-2.1 Europa, and ECMWF AIFS are highlighted in
-every panel; the solar panel additionally highlights EPT-2.1 Helios and
-the precipitation panel EPT-2 Reasoning.}
-\label{fig:fingerprint}
-\end{figure}
-
-\subsection{Robustness analyses}
-\label{sec:robustness}
-
-The main conclusions persist across lead times
-(Figures~\ref{fig:leadwind}--\ref{fig:preciplead}), the 1--12\,h range
-(Figures~\ref{fig:bars12} and \ref{fig:precipbars12}), individual
-countries (Figures~\ref{fig:appbwind}--\ref{fig:appbprecip}), and the
-matched regional comparison
-(Figures~\ref{fig:trackbbars}--\ref{fig:preciptrackblead}). ICON-EU is
-competitive with the leading AI models in the wind and temperature tails,
-while the principal wind, solar, and precipitation patterns remain
-unchanged. Complete robustness and categorical-precipitation results
-(Figure~\ref{fig:precipcat}, Table~\ref{tab:precipcat}) are reported in
-the supplement.
-\section{Discussion}
-
-The results distinguish two meanings of ``missing extremes.'' A forecast
-may underestimate the magnitude of an extreme observation, or it may be
-less accurate than a competing model under the same conditions. The first
-behaviour is common across the evaluated models: low observations tend to
-be overpredicted and high observations underpredicted. The second is not.
-Several AI models achieve lower MAE than IFS within the heat, gale, solar,
-and precipitation regimes. Attenuation of extreme values therefore does
-not imply a general AI-specific deficit in relative skill.
-
-This distinction qualifies earlier findings based primarily on
-first-generation regression models verified against reanalysis
-\citep{olivetti2024extremes}. The broader, station-based comparison
-considered here reveals substantial variation across models and variables.
-EPT-2.1 Helios performs strongly in both solar tails but loses skill under
-typical irradiance, while the Jua precipitation models improve most clearly
-through the middle of the wet distribution rather than at its extreme.
-Performance in the tails is therefore not determined by aggregate skill
-alone.
-
-The results are also inconsistent with a simple AI--physical divide. The
-wind- and temperature-tail deficits of AIFS persist for AIFS ENS despite
-its improved central-regime performance. In contrast, EPT-2 HRRR and
-EPT-2.1 Europa remain competitive at gale force and in heat. Among the
-physical models, ECMWF ENS loses skill in the heat regime, GFS has the
-largest heat deficit, and ICON-EU is competitive with the leading regional
-AI models. These differences are better understood as properties of
-individual models than of their broad forecasting paradigm.
-
-The comparison does not establish what causes these differences. The
-models vary simultaneously in architecture, training objective,
-resolution, training data, initialisation, forecast cadence, and spatial
-domain \citep{bonavita2024limitations,subich2025doublepenalty}.
-Performance cannot therefore be attributed independently to AI versus
-physics, regression versus generative training, or global versus regional
-resolution. Moreover, evaluating ensembles through their means assesses
-point-forecast accuracy but not calibration, spread, or extreme-event
-probabilities.
-
-Absolute attenuation and relative skill are thus complementary properties.
-AI models may underestimate extreme observations without being uniformly
-less accurate than physical models, just as strong aggregate performance
-does not guarantee an advantage in every tail. Within this evaluation,
-performance at extremes is model- and variable-specific rather than a
-general property of AI weather forecasting.
+  
+  \section{Introduction}
+  
+  Data-driven weather models now outperform operational physical models on
+  many standard forecast metrics
+  \citep{bi2023pangu,lam2023graphcast,bouallegue2024rise}. Their performance
+  at extremes remains less certain. Models trained with mean-squared error
+  tend towards the conditional mean, potentially smoothing sharp gradients
+  and attenuating rare events
+  \citep{olivetti2024,bonavita2024limitations}. Evaluations of early AI
+  weather models accordingly report underestimated peak winds, hot and
+  windy tails, and record-breaking events
+  \citep{charltonperez2024,olivetti2024extremes,zhang2026records}.
+  
+  Most of this evidence concerns deterministic regression models evaluated
+  against reanalysis. Generative ensembles, probabilistically trained
+  models, and high-resolution regional AI models have received less
+  attention, particularly against direct observations. This distinction
+  matters because station-based errors can be substantially larger than
+  reanalysis-based estimates
+  \citep{jin2024weatherreal,gupta2025mausam,wagner2025stationbench}.
+  
+  Recent work also suggests that attenuation is not intrinsic to
+  data-driven forecasting. Grid-point regression objectives can reduce
+  effective resolution through the double penalty, whereas
+  amplitude-preserving losses improve surface-wind extremes
+  \citep{subich2025doublepenalty}. Diffusion models preserve flow statistics
+  that regression ensembles tend to suppress
+  \citep{molinaro2024gencfd}, and generative weather models have demonstrated
+  skill for reanalysis-defined extremes and convection-allowing regional
+  forecasting \citep{price2024gencast,pathak2026stormcast}. Direct
+  station-based comparisons across these model classes nevertheless remain
+  limited.
+  
+  Two questions are often conflated: whether a forecast attenuates an
+  extreme observation and whether it is less accurate than a competing model
+  under the same conditions. The first concerns absolute error structure;
+  the second concerns relative skill. A model may underestimate an extreme
+  while remaining closer to the observation than its physical counterpart.
+  
+  We examine this distinction using thirteen forecast models, including
+  ECMWF IFS as the reference. Forecasts are verified over ten months against
+  European synoptic, solar-radiation, and rain-gauge observations. The
+  evaluation covers 10\,m wind, 2\,m temperature, hourly solar radiation,
+  and hourly precipitation at lead times up to 48\,h.
+  
+  Throughout the paper, ``extreme'' denotes the tails of a local ERA5
+  1991--2020 climatology conditioned on station, calendar day, and UTC hour.
+  These regimes identify locally unusual conditions rather than necessarily
+  record-breaking or impact-defined events. We compare relative MAE within
+  these regimes with the corresponding conditional forecast errors. This
+  separates model-specific skill from the common tendency of forecasts to
+  overpredict low observations and underpredict high observations.
+  
+  \section{Methods}
+  \label{sec:data}
+  
+  \subsection{Models}
+  
+  We evaluate twelve forecast models against the ECMWF IFS high-resolution
+  deterministic forecast, which serves as the reference
+  (Table~\ref{tab:models}). The comparison spans physical and AI models,
+  global and regional domains, and deterministic and ensemble forecasts.
+  
+  The physical models are ECMWF ENS, NOAA GFS, DWD ICON Global, and DWD
+  ICON-EU. The AI models comprise the global regression models ECMWF AIFS,
+  Microsoft Aurora, and Jua EPT-2 Reasoning; the global ensembles ECMWF AIFS
+  ENS and Jua EPT-2e; the regional generative ensembles Jua EPT-2 HRRR and
+  EPT-2.1 Europa; and the solar-specialised regional model EPT-2.1 Helios
+  \citep{lang2024aifs,bodnar2025aurora,molinaro2025ept2,
+  lang2024aifscrps,jua2025hrrr,jua2026europadocs,jua2026helios}.
+  AIFS ENS is trained with a continuous ranked probability score objective
+  and learned noise injection and is evaluated as a 51-member ensemble.
+  Related generative methodology is described by
+  \citet{molinaro2026downscaling,molinaro2024gencfd}.
+  
+  Models are evaluated only for variables with compatible outputs.
+  Precipitation is available from the physical models and from EPT-2
+  Reasoning, EPT-2e, EPT-2 HRRR, and EPT-2.1 Europa. AIFS ENS is restricted
+  to wind and temperature because its radiation and precipitation outputs
+  cannot be matched to the hourly verification data.
+  
+  \subsection{Station observations and evaluation}
+  \label{sec:stations}
+  
+  Forecasts are verified against three complementary in situ networks: a
+  synoptic network for 10\,m wind and 2\,m temperature, a solar network for
+  hourly global horizontal irradiance, and a panel of 4{,}005 rain gauges for
+  hourly precipitation. The separate gauge network is required because the
+  synoptic feed does not provide usable hourly precipitation accumulations.
+  Network providers are listed in Appendix~\ref{app:supp}.
+  
+  The evaluation covers thirteen countries: DE, FR, GB, ES, IT, PL, NL, BE,
+  CH, NO, AT, CZ, and DK. The precipitation network excludes Italy and
+  Poland. Forecasts are bilinearly interpolated to observation locations
+  \citep{molinaro2026downscaling}. Precipitation is scored only at gauges
+  within each model's domain, and regional comparisons use a common gauge
+  sample. None of the Jua models was trained or fine-tuned on these
+  observations; historical station errors enter only through the causal bias
+  correction described below.
+  
+  Two evaluation tracks account for differences in availability and output
+  cadence. Track~A covers 1 September 2025 to 30 June 2026. Wind and
+  temperature use 6-hourly leads from 6 to 48\,h, matching the cadence of
+  AIFS, AIFS ENS, and Aurora. Solar radiation and hourly precipitation use
+  leads from 1 to 48\,h. Models without compatible outputs are omitted for
+  the corresponding variable, and ECMWF ENS contributes to precipitation
+  only at its native 6-hourly leads.
+  
+  Track~B covers 1 March to 30 June 2026 and compares EPT-2.1 Europa,
+  EPT-2 HRRR, and ICON-EU over a common hourly grid from 1 to 48\,h.
+  EPT-2.1 Helios is additionally included for solar radiation. Detailed
+  availability by variable, country, and period is reported in the
+  supplement.
+  
+  \subsection{Observed-value regimes}
+  \label{sec:thresholds}
+  
+  Regimes are defined independently of the evaluation period using the fixed
+  ERA5 1991--2020 climatology \citep{hersbach2020era5}. ERA5 fields are
+  bilinearly interpolated from the \(0.25^\circ\) grid to each station. For
+  every station, calendar day, and UTC hour, the reference distribution
+  contains values from a cyclic \(\pm15\)-day window over the 30-year
+  period, yielding 930 values before variable-specific conditioning.
+  
+  We denote percentiles of this distribution by P5, P25, P50, P75, and
+  P95. Wind and temperature use all climatological values, while solar
+  percentiles are estimated from positive daytime irradiance.
+  Precipitation below \(0.1\)~mm forms a separate dry regime; for
+  precipitation, P50, P75, and P95 always denote percentiles of wet hours.
+  Each forecast--observation pair is assigned
+  to a regime according to its observed value \(y\), so regime membership
+  is identical across models and leads. The complete definitions and
+  meteorological labels are given in
+  Tables~\ref{tab:regimes} and \ref{tab:precipregimes}.
+  
+  This local-climatology construction follows established practice for
+  climate extremes \citep{zhang2011indices,kleintank2009guidelines,
+  perkins2013heatwaves}. Because ERA5 represents grid-cell averages, its
+  variance is lower than that of point observations; observed wind and solar
+  tails are consequently broader than their nominal climatological
+  probabilities.
+  
+  \subsection{Bias correction}
+  \label{sec:debias}
+  
+  We apply a causal rolling bias correction before computing skill. For
+  wind, temperature, and daytime solar radiation, the correction is
+  additive. Let \(\mathcal{D}_{w,h}\) contain the matched errors at valid
+  hour \(h\) during the four weeks preceding week \(w\). For model \(m\),
+  \begin{equation}
+  \bar b_{m,w,h}
+  =
+  \frac{1}{|\mathcal{D}_{w,h}|}
+  \sum_{(f_m,y)\in\mathcal{D}_{w,h}}(f_m-y),
+  \qquad
+  \widetilde f_m(t)=f_m(t)-\bar b_{m,w,h(t)}.
+  \end{equation}
+  The estimate is pooled across European stations and does not depend on
+  initialisation or lead. For ensemble models, the same shift is applied to
+  every member.
+  
+  An additive correction is unsuitable for zero-bounded, right-skewed
+  precipitation. Let \(\mathcal{P}_w\) contain forecasts and observations
+  from the preceding four weeks, pooled across initialisations and leads.
+  We apply
+  \begin{equation}
+  a_{m,w}
+  =
+  \operatorname{clip}_{[0.33,\,3]}
+  \left(
+  \frac{\sum_{\mathcal{P}_w}y}
+       {\sum_{\mathcal{P}_w}f_m}
+  \right),
+  \qquad
+  \widetilde f_m(t)=a_{m,w}f_m(t).
+  \end{equation}
+  This multiplicative correction adjusts systematic amount biases while
+  preserving zero forecasts. Both procedures use only prior information and
+  do not alter observation-defined regime membership or force the
+  conditional error within each regime to zero.
+  
+  \subsection{Skill and aggregation}
+  \label{sec:aggregation}
+  
+  For model \(m\) and evaluation cell \(c\), MAE skill relative to ECMWF IFS
+  is
+  \begin{equation}
+  S_{m,c}
+  =
+  1-\frac{\operatorname{MAE}_{m,c}}
+          {\operatorname{MAE}_{\mathrm{IFS},c}}.
+  \end{equation}
+  Positive values indicate lower MAE than IFS. Scores are computed from
+  matched forecast--observation pairs using the common intersection of
+  available initialisations and the four daily cycles at 00, 06, 12, and
+  18 UTC.
+  
+  Ensemble models are evaluated through their ensemble means; the analysis
+  therefore assesses point-forecast accuracy rather than calibration or
+  spread. Results are reported at selected leads and over the complete lead
+  grid of each comparison. Lower-cadence models contribute only at their
+  native leads, without temporal interpolation.
+  
+  Uncertainty is estimated using a leave-one-month-out jackknife and
+  reported as one standard error. For exceedance of
+  P95, we additionally report probability of
+  detection, false-alarm ratio, critical success index, and frequency bias,
+  pooled across gauges and leads up to 48\,h.
+  
+  \section{Results}
+  
+  \subsection{Skill across the observed distribution}
+  \label{sec:regimes}
+
+\begin{figure}[!hbp]
+  \centering
+  \includegraphics[width=0.72\textwidth]{fig3_headline_bars.png}
+  \caption{Track~A MAE skill relative to ECMWF IFS by observed-value regime,
+  with \(\pm1\) jackknife SE. Wind and temperature use 6--48\,h leads;
+  solar radiation uses 1--48\,h.}
+  \label{fig:bars}
+  \end{figure}
+  
+  Figure~\ref{fig:bars} shows that tail skill does not follow a uniform
+  AI--physical ordering. EPT-2.1 Europa leads the wind comparison overall
+  and remains competitive with ICON Global at gale force. EPT-2 HRRR and
+  EPT-2.1 Europa perform most strongly for temperature, including in the
+  heat regime. By contrast, AIFS and AIFS ENS remain below IFS in the wind
+  and temperature tails despite the ensemble's improved performance near
+  the centre of the distribution. The largest heat deficit belongs to the
+  physical GFS model.
+  
+  Solar radiation follows a different pattern. EPT-2.1 Helios leads overall
+  and under overcast and near-clear-sky conditions but falls below IFS under
+  typical irradiance, where EPT-2 Reasoning performs most strongly. Its
+  advantage is therefore concentrated in the tails rather than distributed
+  uniformly across conditions.
+
+  
+  For precipitation, the clearest gains occur in the middle of the wet-hour
+  distribution (Figure~\ref{fig:precipbars}). EPT-2 HRRR, EPT-2e, and
+  EPT-2 Reasoning improve on IFS from moderate through high rain, whereas
+  the physical global models remain below the reference. These gains narrow
+  at the heaviest intensities. Europa follows a distinct pattern, deriving
+  much of its aggregate skill from dry hours while losing skill once
+  precipitation occurs.
+  
+  \subsection{Shared conditional-error pattern}
+  \label{sec:fingerprint}
+
+\begin{figure}[!hbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{fig6_fingerprint.png}
+  \caption{Mean forecast-minus-observation error at 48\,h, conditioned on
+  the observed-value regime after bias correction. The grey envelope spans
+  all models; selected models are highlighted.}
+  \label{fig:fingerprint}
+  \end{figure}
+  
+  Despite their differences in relative skill, all models exhibit the same
+  conditional-error structure (Figure~\ref{fig:fingerprint}): low
+  observations are overpredicted and high observations underpredicted. The
+  variation across regimes is larger than the spread between models and is
+  present for all four variables. A common tendency towards the centre of
+  the observed distribution therefore coexists with model-specific
+  differences in relative accuracy.
+  
+  Because regimes are conditioned on the verifying observation, this
+  pattern is not by itself evidence of smoothing. Limited predictability,
+  unresolved local variability, and observational or representativeness
+  errors can produce the same structure.
+
+  
+  Supplementary analyses show that the principal conclusions persist across
+  lead times, short-range forecasts, individual countries, and the matched
+  regional comparison (Appendix~\ref{app:supp}). The supplement also reports
+  the complete precipitation, uncertainty, and categorical-verification
+  results.
+  
+  \section{Discussion}
+  
+  The results distinguish two meanings of ``missing extremes.'' A forecast
+  may underestimate an extreme observation, or it may be less accurate than
+  a competing model under the same conditions. The first behaviour is
+  common: all evaluated models tend to overpredict low observations and
+  underpredict high observations. The second is not. Several AI models
+  achieve lower MAE than IFS in the heat, gale, solar, and precipitation
+  regimes. Attenuation of extreme values therefore does not imply a general
+  AI-specific deficit in relative skill.
+  
+  This distinction qualifies earlier findings based mainly on deterministic
+  regression models evaluated against reanalysis
+  \citep{olivetti2024extremes}. The broader station-based comparison reveals
+  substantial variation across models and variables. EPT-2.1 Helios performs
+  strongly in both solar tails but loses skill under typical irradiance,
+  while the precipitation gains of the Jua models are concentrated in the
+  middle of the wet distribution. Tail performance is therefore not
+  determined by aggregate skill alone.
+  
+  The results are also inconsistent with a simple AI--physical divide. The
+  wind- and temperature-tail deficits of AIFS persist for AIFS ENS despite
+  its improved central-regime performance. Conversely, EPT-2 HRRR and
+  EPT-2.1 Europa remain competitive at gale force and in heat. Physical
+  models show comparable variation: GFS has the largest heat deficit, while
+  ICON-EU is competitive with the leading regional AI models.
+  
+  These comparisons do not establish the causes of the differences. The
+  models vary in architecture, objective, resolution, training data,
+  initialisation, cadence, and domain
+  \citep{bonavita2024limitations,subich2025doublepenalty}. Their performance
+  cannot therefore be attributed independently to AI versus physics,
+  regression versus generative training, or global versus regional
+  resolution. Evaluating ensembles through their means also provides no
+  evidence about calibration, spread, or extreme-event probabilities.
+  
+  Absolute attenuation and relative skill are therefore complementary.
+  AI models may underestimate extreme observations without being uniformly
+  less accurate than physical models, while strong aggregate performance
+  does not guarantee an advantage in every tail. Within this evaluation,
+  performance at extremes is model- and variable-specific rather than a
+  general weakness of AI weather forecasting.
 
 % ICLR: the statements below do not count toward the page limit. The
 % affiliation and public links are hidden unless \iclrfinalcopy is set,
@@ -578,6 +439,18 @@ take full responsibility for the content.
 \renewcommand{\thetable}{S\arabic{table}}
 \renewcommand{\thefigure}{S\arabic{figure}}
 
+This supplement provides the model and regime definitions omitted from the
+main text, lead-time and short-range robustness checks for Track~A, the
+matched regional comparison in Track~B, complete numerical tables, and
+country-level regime profiles.
+
+\subsection{Evaluation setup}
+
+Table~\ref{tab:models} identifies the forecasting systems and their broad
+model classes. Tables~\ref{tab:regimes} and \ref{tab:precipregimes} give
+the observed-value intervals and meteorological labels used throughout the
+evaluation.
+
 % Model and regime tables moved from Methods for the ICLR page limit.
 \begin{table}[htbp]
 \centering
@@ -610,18 +483,18 @@ Jua EPT-2.1 Europa & Generative AI & Ensemble & Regional \\
 \begin{table}[htbp]
 \centering
 \caption{Observed-value regimes for wind, temperature, and solar radiation.
-For solar radiation, the quantiles refer to positive daytime GHI.}
+For solar radiation, the percentiles refer to positive daytime GHI.}
 \label{tab:regimes}
 \numtable{\begin{tabular}{lllll}
 \toprule
 Regime & Definition & Wind & Temperature & Solar \\
 \midrule
 All       & --                          & all conditions  & all conditions & all daytime \\
-Very low  & \(y<q_{0.05}\)              & calm            & severe cold    & heavily overcast \\
-Low       & \(q_{0.05}\leq y<q_{0.25}\) & light air       & cold           & overcast \\
-Typical   & \(q_{0.25}\leq y<q_{0.75}\) & moderate        & moderate       & mixed sky \\
-High      & \(q_{0.75}\leq y<q_{0.95}\) & fresh to strong & warm           & mostly sunny \\
-Very high & \(y\geq q_{0.95}\)          & gale force      & heat           & near clear sky \\
+Very low  & \(y<\mathrm{P5}\)                         & calm            & severe cold    & heavily overcast \\
+Low       & \(\mathrm{P5}\leq y<\mathrm{P25}\)        & light air       & cold           & overcast \\
+Typical   & \(\mathrm{P25}\leq y<\mathrm{P75}\)       & moderate        & moderate       & mixed sky \\
+High      & \(\mathrm{P75}\leq y<\mathrm{P95}\)       & fresh to strong & warm           & mostly sunny \\
+Very high & \(y\geq\mathrm{P95}\)                     & gale force      & heat           & near clear sky \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -629,7 +502,7 @@ Very high & \(y\geq q_{0.95}\)          & gale force      & heat           & nea
 \begin{table}[htbp]
 \centering
 \caption{Observed-value regimes for hourly precipitation. Wet-hour
-quantiles are conditional on ERA5 accumulations of at least \(0.1\)~mm.}
+percentiles are conditional on ERA5 accumulations of at least \(0.1\)~mm.}
 \label{tab:precipregimes}
 \numtable{\begin{tabular}{lll}
 \toprule
@@ -637,13 +510,24 @@ Regime & Definition & Interpretation \\
 \midrule
 All      & --                                                       & all hours \\
 Dry      & \(y<0.1\,\mathrm{mm}\)                                   & dry hour \\
-Light    & \(0.1\,\mathrm{mm}\leq y<q_{0.50}^{\mathrm{wet}}\)        & light rain \\
-Moderate & \(q_{0.50}^{\mathrm{wet}}\leq y<q_{0.75}^{\mathrm{wet}}\) & moderate rain \\
-High     & \(q_{0.75}^{\mathrm{wet}}\leq y<q_{0.95}^{\mathrm{wet}}\) & heavy rain \\
-Heavy    & \(y\geq q_{0.95}^{\mathrm{wet}}\)                         & most intense hours \\
+Light    & \(0.1\,\mathrm{mm}\leq y<\mathrm{P50}\)        & light rain \\
+Moderate & \(\mathrm{P50}\leq y<\mathrm{P75}\)            & moderate rain \\
+High     & \(\mathrm{P75}\leq y<\mathrm{P95}\)            & heavy rain \\
+Heavy    & \(y\geq\mathrm{P95}\)                          & most intense hours \\
 \bottomrule
 \end{tabular}}
 \end{table}
+
+\FloatBarrier
+\subsection{Track A lead-time, short-range, and precipitation robustness}
+
+Figures~\ref{fig:leadwind}--\ref{fig:preciplead} show skill as a function
+of forecast lead for all conditions and the relevant upper or lower tail.
+Figure~\ref{fig:bars12} repeats the regime comparison over 1--12\,h, and
+Table~\ref{tab:countryheat} reports heat-regime skill by country.
+Figures~\ref{fig:precipbars}--\ref{fig:precipcat} and
+Tables~\ref{tab:precipskill} and \ref{tab:precipskillshort} provide the
+full-horizon, short-range, and categorical precipitation checks.
 
 % Floats moved from the main text for the ICLR page limit.
 \begin{figure}[htbp]
@@ -651,7 +535,7 @@ Heavy    & \(y\geq q_{0.95}^{\mathrm{wet}}\)                         & most inte
 \includegraphics[width=\textwidth]{fig2_skill_vs_lead_wind.png}
 \caption{MAE skill relative to ECMWF IFS by lead time for 10\,m wind.
 The left panel shows all conditions; the right panel shows the gale-force
-regime, \(y\geq q_{0.95}\). Shading denotes \(\pm1\) jackknife SE.}
+regime, \(y\geq\mathrm{P95}\). Shading denotes \(\pm1\) jackknife SE.}
 \label{fig:leadwind}
 \end{figure}
 
@@ -659,7 +543,7 @@ regime, \(y\geq q_{0.95}\). Shading denotes \(\pm1\) jackknife SE.}
 \centering
 \includegraphics[width=\textwidth]{fig2_skill_vs_lead_temp.png}
 \caption{As Figure~\ref{fig:leadwind}, for 2\,m temperature. The right
-panel shows the heat regime, \(y\geq q_{0.95}\).}
+panel shows the heat regime, \(y\geq\mathrm{P95}\).}
 \label{fig:leadtemp}
 \end{figure}
 
@@ -669,7 +553,7 @@ panel shows the heat regime, \(y\geq q_{0.95}\).}
 \caption{Track~A MAE skill relative to ECMWF IFS by lead time for hourly
 solar radiation. The left panel shows all daytime conditions; the right
 panel shows the overcast regime,
-\(q_{0.05}\leq y<q_{0.25}\). AIFS, AIFS ENS, Aurora, and ECMWF ENS are
+\(\mathrm{P5}\leq y<\mathrm{P25}\). AIFS, AIFS ENS, Aurora, and ECMWF ENS are
 omitted because they lack compatible hourly solar output. Shading denotes
 \(\pm1\) jackknife SE.}
 \label{fig:leadsolar}
@@ -680,7 +564,7 @@ omitted because they lack compatible hourly solar output. Shading denotes
 \includegraphics[width=\textwidth]{figp2_precip_lead.png}
 \caption{Track~A MAE skill relative to ECMWF IFS by lead time for hourly
 precipitation. The left panel shows all conditions; the right panel shows
-the heavy regime, \(y\geq q_{0.95}^{\mathrm{wet}}\). Shading denotes
+the heavy regime, \(y\geq\mathrm{P95}\). Shading denotes
 \(\pm1\) jackknife SE.}
 \label{fig:preciplead}
 \end{figure}
@@ -698,12 +582,20 @@ EPT-2.1 Helios.}
 \begin{table}[htbp]
 \centering
 \caption{Track~A MAE skill (\%) by country in the heat regime
-(\(y\geq q_{0.95}\)), aggregated over 6--48\,h after bias correction.
+(\(y\geq\mathrm{P95}\)), aggregated over 6--48\,h after bias correction.
 NOAA GFS is negative in every country with available observations.}
 \label{tab:countryheat}
 \numtable{\resizebox{\textwidth}{!}{
 \input{tables/t5_per_country_gt95_temp.tex}}}
 \end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figp1_precip_bars.png}
+\caption{Track~A MAE skill relative to ECMWF IFS for hourly precipitation
+by observed-value regime over 1--48\,h, with \(\pm1\) jackknife SE.}
+\label{fig:precipbars}
+\end{figure}
 
 \begin{figure}[htbp]
 \centering
@@ -728,16 +620,26 @@ jackknife SE.}
 \centering
 \includegraphics[width=\textwidth]{figp5_precip_categorical.png}
 \caption{Detection of heavy precipitation
-(\(y\geq q_{0.95}^{\mathrm{wet}}\)) on Track~A over 1--48\,h.
+(\(y\geq\mathrm{P95}\)) on Track~A over 1--48\,h.
 Left: critical success index, with ECMWF IFS shown by the dashed line.
 Right: frequency bias, with unity denoting the correct event frequency.
 All models underpredict the frequency of heavy precipitation.}
 \label{fig:precipcat}
 \end{figure}
 
+\FloatBarrier
+\subsection{Matched regional comparison}
+
+Track~B compares the regional generative systems directly with ICON-EU
+over March--June 2026. Figures~\ref{fig:trackbbars} and
+\ref{fig:trackbbars12} show regime skill over 1--48\,h and 1--12\,h,
+Figure~\ref{fig:trackb} shows the lead dependence, and
+Figures~\ref{fig:preciptrackb} and \ref{fig:preciptrackblead} give the
+corresponding precipitation results.
+
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.88\textwidth]{fig8b_track_b_bars.png}
+\includegraphics[width=0.72\textwidth]{fig8b_track_b_bars.png}
 \caption{Track~B MAE skill relative to ECMWF IFS by observed-value regime,
 aggregated over 1--48\,h from March to June 2026, with \(\pm1\)
 jackknife SE. Wind and temperature compare EPT-2.1 Europa, EPT-2 HRRR,
@@ -748,7 +650,7 @@ Models are ordered by all-conditions skill within each panel.}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{fig8c_track_b_bars_1_12.png}
+\includegraphics[width=0.75\textwidth]{fig8c_track_b_bars_1_12.png}
 \caption{As Figure~\ref{fig:trackbbars}, restricted to the 1--12\,h
 forecast range.}
 \label{fig:trackbbars12}
@@ -780,10 +682,19 @@ by observed-value regime, aggregated over 1--48\,h from March to June
 \includegraphics[width=\textwidth]{figp7_precip_track_b_lead.png}
 \caption{Track~B precipitation skill relative to ECMWF IFS by lead time.
 The left panel shows all conditions; the right panel shows the heavy
-regime, \(y\geq q_{0.95}^{\mathrm{wet}}\). Shading denotes \(\pm1\)
+regime, \(y\geq\mathrm{P95}\). Shading denotes \(\pm1\)
 jackknife SE.}
 \label{fig:preciptrackblead}
 \end{figure}
+
+\FloatBarrier
+\subsection{Complete numerical results}
+
+Tables~\ref{tab:skillwind}--\ref{tab:leadsolar} report Track~A regime,
+short-range, and lead-time values. Tables~\ref{tab:trackb}--
+\ref{tab:preciptrackblead} report the corresponding Track~B values;
+Tables~\ref{tab:preciptrackb} and \ref{tab:precipcat} complete the
+regional precipitation and heavy-event detection results.
 
 \begin{table}[htbp]
 \centering
@@ -856,7 +767,7 @@ Point estimates (no SE in per-lead tables).}
 \begin{table}[htbp]
 \centering
 \caption{Track~A MAE skill (\%) by lead -- Figure~\ref{fig:leadsolar}, solar
-(Ovc.\ = overcast, P5--25). Point estimates; SEs in regime tables.}
+(Ovc.\ = overcast, P5--P25). Point estimates; SEs in regime tables.}
 \label{tab:leadsolar}
 \numtable{\input{tables/t2_perlead_solar.tex}}
 \end{table}
@@ -903,7 +814,7 @@ temperature.}
 \begin{table}[htbp]
 \centering
 \caption{Track~B MAE skill (\%) by lead -- Figure~\ref{fig:trackb}, solar
-(Ovc.\ = overcast, P5--25).}
+(Ovc.\ = overcast, P5--P25).}
 \label{tab:trackbleadsolar}
 \numtable{\input{tables/t2b_perlead_solar.tex}}
 \end{table}
@@ -916,12 +827,38 @@ temperature.}
 \numtable{\input{tables/tp4_precip_track_b_lead.tex}}
 \end{table}
 
+\begin{table}[htbp]
+\centering
+\caption{Track~B MAE skill (\%) for 1\,h precipitation by wet-hour regime,
+1 to 48\,h, debiased -- Figure~\ref{fig:preciptrackb}. Parentheses:
+jackknife SE.}
+\label{tab:preciptrackb}
+\numtable{\resizebox{\textwidth}{!}{\input{tables/tp2_precip_track_b.tex}}}
+\end{table}
+\begin{table}[htbp]
+\centering
+\caption{Heavy-precipitation ($>$P95) detection on Track~A, 1 to 48\,h,
+debiased -- Figure~\ref{fig:precipcat}. POD: probability of detection; FAR:
+false-alarm ratio; CSI: critical success index; frequency bias is forecast
+over observed event count.}
+\label{tab:precipcat}
+\numtable{\input{tables/tp3_precip_categorical.tex}}
+\end{table}
+
+\FloatBarrier
+\subsection{Country-level regime profiles}
+
+Figures~\ref{fig:appbwind}--\ref{fig:appbprecip} show how the
+March--June regime-skill patterns vary across countries for the mixed
+regional/global comparison set. Countries without sufficient matched
+observations for a variable are omitted.
+
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{appB_bucket_profile_by_country_wind.png}
 \caption{Per-country MAE skill by ERA5 1991--2020 climatological regime,
 10\,m wind, March--June~2026, pooled 1 to 48\,h (hourly). Mixed
-regional/global model set (Section~\ref{sec:robustness}).}
+regional/global model set.}
 \label{fig:appbwind}
 \end{figure}
 
@@ -944,29 +881,11 @@ GB, IT and PL have no solar station observations
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{appB_bucket_profile_by_country_precip.png}
-\caption{As Figure~\ref{fig:appbwind}, for 1\,h precipitation using the
-wet-hour regimes of Table~\ref{tab:precipregimes}. IT and PL have no gauges
-in the precipitation panel.}
+\caption{Per-country MAE skill by precipitation regime for the mixed
+regional/global model set. IT and PL have no gauges in the precipitation
+panel.}
 \label{fig:appbprecip}
 \end{figure}
 
-\begin{table}[htbp]
-\centering
-\caption{Track~B MAE skill (\%) for 1\,h precipitation by wet-hour regime,
-1 to 48\,h, debiased -- Figure~\ref{fig:preciptrackb}. Parentheses:
-jackknife SE.}
-\label{tab:preciptrackb}
-\numtable{\resizebox{\textwidth}{!}{\input{tables/tp2_precip_track_b.tex}}}
-\end{table}
-
-\begin{table}[htbp]
-\centering
-\caption{Heavy-precipitation ($>$P95) detection on Track~A, 1 to 48\,h,
-debiased -- Figure~\ref{fig:precipcat}. POD: probability of detection; FAR:
-false-alarm ratio; CSI: critical success index; frequency bias is forecast
-over observed event count.}
-\label{tab:precipcat}
-\numtable{\input{tables/tp3_precip_categorical.tex}}
-\end{table}
-
+\FloatBarrier
 \end{document}
