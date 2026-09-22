@@ -8,9 +8,10 @@ AI weather models are widely believed to smooth extremes. That belief rests
 on studies of first-generation deterministic-regression models
 (FourCastNet, Pangu-Weather, GraphCast, FuXi), verified mostly against
 reanalysis — a truth that is itself smooth at station scale. We tested the
-claim directly: eleven forecast systems spanning physical NWP,
-deterministic-regression AI, generative AI ensembles, and a
-solar-specialised model, verified against European synoptic,
+claim directly: twelve forecast systems spanning physical NWP,
+deterministic-regression AI, a CRPS-trained AI ensemble (ECMWF AIFS ENS),
+generative AI ensembles, and a solar-specialised model, verified against
+European synoptic,
 solar-radiation and rain-gauge stations for 10 m wind, 2 m temperature,
 hourly shortwave accumulation, and hourly precipitation, with identical
 causal debiasing, initialisation
@@ -42,6 +43,12 @@ leave-one-month-out jackknife SE. Track A is September 2025 – June 2026,
   AI-specific**: ECMWF AIFS loses 10.6 ± 0.6% at gale-force wind, 4.9 ± 2.0%
   in heat, and 27.3 ± 3.6% at cold extremes — while NOAA GFS, a physical
   model, loses 22.8 ± 2.0% in heat and is negative there in every country.
+- **Switching AIFS to a CRPS-trained ensemble does not fix its tails**:
+  the ECMWF AIFS ENS mean (51 members) is about 3% better than
+  deterministic AIFS under all wind conditions (−2.3 ± 0.5%) and positive
+  in the typical band, but keeps the same deficits at gale force
+  (−9.0 ± 0.7%) and in heat (−5.1 ± 1.7%). Scored on wind and temperature
+  only (its solar and precipitation output are not hourly accumulations).
 - **The tails do not rank models the way the mean does**: GFS is the worst
   system overall on wind (−11.7%) yet still marginally positive at gale
   force (+0.6 ± 0.7%), and DWD ICON Global leads there (+9.5 ± 1.2%) just

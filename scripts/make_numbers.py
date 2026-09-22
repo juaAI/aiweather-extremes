@@ -55,9 +55,10 @@ SCOPE_LABEL = {
 TRACK_A_SCOPES = ["lead_6", "lead_12", "lead_24", "lead_48", "h6_48", "h6_240", "h1_48"]
 TRACK_BC_SCOPES = ["lead_6", "lead_12", "lead_24", "lead_48", "h6_48", "h1_48"]
 
-# Solar model order (track_c includes ept2_1_helios, excludes aifs/aurora/ens).
+# Solar model order (track_c includes ept2_1_helios, excludes
+# aifs/aifs_ens/aurora/ens).
 SOLAR_ORDER = ["ept2_1_helios"] + [
-    m for m in MODEL_ORDER if m not in ("aifs", "aurora", "ecmwf_ens")
+    m for m in MODEL_ORDER if m not in ("aifs", "aifs_ens", "aurora", "ecmwf_ens")
 ]
 
 # Precip: aifs/aurora/helios emit no precipitation.

@@ -88,6 +88,14 @@ MODELS = [
         "marker": "cross",
     },
     {
+        "key": "aifs_ens",
+        "label": "ECMWF AIFS ENS (mean)",
+        "shortLabel": "ECMWF AIFS ENS",
+        "group": "External AI",
+        "color": "#C51B7D",
+        "marker": "pentagon",
+    },
+    {
         "key": "ecmwf_ens",
         "label": "ECMWF ENS (mean)",
         "shortLabel": "ECMWF ENS",
@@ -201,6 +209,10 @@ _REASON_SOLAR_SPECIALIST = (
 _REASON_NO_SOLAR = "No usable solar output."
 _REASON_NO_PRECIP = "No precipitation output."
 _REASON_SIX_HOURLY = "6-hourly native output; hourly grids are not covered."
+_REASON_AIFS_ENS_NOT_HOURLY = (
+    "Evaluated on 10 m wind and 2 m temperature only; its shortwave and "
+    "precipitation output are not hourly accumulations."
+)
 _REASON_ENS_PRECIP = (
     "Scored on its native 6-hourly cadence; shown under the 6–48 h horizon."
 )
@@ -237,6 +249,11 @@ def omission_reason(
                 return _REASON_NO_SOLAR
             if variable == PRECIP:
                 return _REASON_NO_PRECIP
+            if scope in HOURLY_SCOPES:
+                return _REASON_SIX_HOURLY
+        if model == "aifs_ens":
+            if variable in (SOLAR, PRECIP):
+                return _REASON_AIFS_ENS_NOT_HOURLY
             if scope in HOURLY_SCOPES:
                 return _REASON_SIX_HOURLY
         if model == "ecmwf_ens":

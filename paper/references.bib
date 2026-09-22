@@ -139,8 +139,8 @@
 
 % Verified: arXiv:2406.01465 (abs page, full 16-author list). ECMWF's
 % data-driven forecasting system; deterministic GNN-encoder + transformer.
-% (An AIFS-CRPS ensemble variant exists separately; this cite is the
-% deterministic AIFS run operationally and scored in this paper.)
+% (The AIFS-CRPS ensemble variant is cited separately below as
+% lang2024aifscrps; this cite is the deterministic AIFS run operationally.)
 @misc{lang2024aifs,
   author        = {Lang, Simon and Alexe, Mihai and Chantry, Matthew and Dramsch, Jesper and Pinault, Florian and Raoult, Baudouin and Clare, Mariana C. A. and Lessig, Christian and Maier-Gerber, Michael and Magnusson, Linus and Ben Bouall{\`e}gue, Zied and Prieto Nemesio, Ana and Dueben, Peter D. and Brown, Andrew and Pappenberger, Florian and Rabier, Florence},
   title         = {{AIFS} -- {ECMWF}'s data-driven forecasting system},
@@ -149,6 +149,21 @@
   archivePrefix = {arXiv},
   primaryClass  = {physics.ao-ph},
   howpublished  = {arXiv preprint arXiv:2406.01465}
+}
+
+% Verified: arXiv:2412.15832 (abs page, 18-author list). ECMWF's ensemble
+% AIFS (AIFS-CRPS / AIFS ENS): same encoder-processor-decoder design as the
+% deterministic AIFS, trained on the almost-fair CRPS with learned noise
+% shaping; members are initialised from the operational IFS ensemble
+% initial conditions. Scored in this paper on its 51-member mean.
+@misc{lang2024aifscrps,
+  author        = {Lang, Simon and Alexe, Mihai and Clare, Mariana C. A. and Roberts, Christopher and Adewoyin, Rilwan and Ben Bouall{\`e}gue, Zied and Chantry, Matthew and Dramsch, Jesper and Dueben, Peter D. and Hahner, Sara and Maciel, Pedro and Prieto-Nemesio, Ana and O'Brien, Cathal and Pinault, Florian and Polster, Jan and Raoult, Baudouin and Tietsche, Steffen and Leutbecher, Martin},
+  title         = {{AIFS-CRPS}: Ensemble forecasting using a model trained with a loss function based on the {Continuous Ranked Probability Score}},
+  year          = {2024},
+  eprint        = {2412.15832},
+  archivePrefix = {arXiv},
+  primaryClass  = {physics.ao-ph},
+  howpublished  = {arXiv preprint arXiv:2412.15832}
 }
 
 % Verified: Crossref 10.1038/s41586-025-09005-y; nature.com article page

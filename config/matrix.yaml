@@ -13,6 +13,10 @@ models:
   ept2_e:           {family: jua,      training: regression,  output: ensemble,      domain: global}
   ept2_reasoning:   {family: jua,      training: regression,  output: deterministic, domain: global}
   aifs:             {family: external, training: regression,  output: deterministic, domain: global}
+  # AIFS ENS (AIFS-CRPS): 51-member ensemble trained on a CRPS-based loss.
+  # Scored on the ensemble mean, wind/temperature only (its precipitation and
+  # shortwave output are not hourly accumulations).
+  aifs_ens:         {family: external, training: crps,        output: ensemble,      domain: global}
   aurora:           {family: external, training: regression,  output: deterministic, domain: global}
   ecmwf_ifs_single: {family: physics,  training: physics,     output: deterministic, domain: global}
   noaa_gfs_single:  {family: physics,  training: physics,     output: deterministic, domain: global}
@@ -34,6 +38,7 @@ tracks:
       - ept2_e
       - ept2_reasoning
       - aifs
+      - aifs_ens
       - aurora
       - ecmwf_ifs_single
       - noaa_gfs_single

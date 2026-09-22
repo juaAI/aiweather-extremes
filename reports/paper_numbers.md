@@ -1,13 +1,13 @@
 # Inline paper numbers
 
-Single source: `data/derived/final_aggregates.parquet` (80618 rows, aggregation self-test: PASS). Regenerate with `python scripts/aggregates.py && python scripts/make_numbers.py`.
+Single source: `data/derived/final_aggregates.parquet` (84014 rows, aggregation self-test: PASS). Regenerate with `python scripts/aggregates.py && python scripts/make_numbers.py`.
 
 Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based skill in kind=skill_pct_rmse), sample-matched per (country, lead) cell vs ECMWF IFS; cross-country and cross-lead pooling sample-weighted (RMSE quadratic, bias/MAE/CRPS linear); regime cells with <100 samples excluded; extremes = LOCAL per-country percentile regimes (obs_bucket); (±x.x) = jackknife SE over monthly replicates. All skills/biases/deltas signed, 1 decimal.
 
 ## Coverage omissions (models lacking leads are omitted, not interpolated)
 
 - track_a h6_240: omitted (native cadence/horizon does not cover this grid): Jua EPT-2.1 Europa, Jua EPT-2.1 Helios, Jua EPT-2 HRRR
-- track_a h1_48: omitted (native cadence/horizon does not cover this grid): ECMWF AIFS, Microsoft Aurora, ECMWF ENS (mean)
+- track_a h1_48: omitted (native cadence/horizon does not cover this grid): ECMWF AIFS, ECMWF AIFS ENS (mean), Microsoft Aurora, ECMWF ENS (mean)
 - track_a h1_12: Jua EPT-2.1 Europa pools 2/12 grid leads (missing leads omitted, never interpolated)
 - track_a h1_12: Jua EPT-2.1 Helios pools 2/12 grid leads (missing leads omitted, never interpolated)
 - track_a h1_12: Jua EPT-2e pools 2/12 grid leads (missing leads omitted, never interpolated)
@@ -47,6 +47,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | -1.2 | -12.8 | -2.1 | +5.6 | +0.5 | -8.0 |
 | Microsoft Aurora | -1.6 | -8.1 | -4.6 | +1.2 | +1.1 | -4.0 |
 | ECMWF AIFS | -6.6 | -12.1 | -9.7 | -3.2 | -2.7 | -10.8 |
+| ECMWF AIFS ENS (mean) | -3.5 | -11.1 | -4.9 | +1.0 | -1.7 | -8.3 |
 | ECMWF ENS (mean) | +0.3 | -1.0 | -0.2 | +1.1 | +1.2 | -0.9 |
 | NOAA GFS | -11.1 | +2.0 | -9.5 | -21.4 | -15.2 | +2.0 |
 | DWD ICON Global | +4.6 | -5.7 | +3.0 | +4.1 | +4.2 | +10.1 |
@@ -61,6 +62,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | -1.0 | -11.6 | -2.5 | +5.3 | +1.7 | -7.5 |
 | Microsoft Aurora | -1.6 | -7.5 | -4.7 | +0.8 | +1.6 | -3.6 |
 | ECMWF AIFS | -6.5 | -11.4 | -9.6 | -3.5 | -2.3 | -11.0 |
+| ECMWF AIFS ENS (mean) | -3.4 | -12.0 | -4.5 | +1.6 | -1.1 | -8.9 |
 | ECMWF ENS (mean) | +0.7 | -0.9 | +0.3 | +1.7 | +1.5 | -0.8 |
 | NOAA GFS | -11.1 | +2.7 | -9.0 | -21.9 | -15.3 | +1.8 |
 | DWD ICON Global | +4.6 | -3.9 | +3.6 | +3.6 | +4.0 | +10.1 |
@@ -75,6 +77,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | -0.1 | -8.8 | -1.6 | +5.4 | +2.8 | -6.7 |
 | Microsoft Aurora | -0.9 | -6.3 | -4.0 | +1.7 | +2.2 | -3.6 |
 | ECMWF AIFS | -5.7 | -9.7 | -8.2 | -2.4 | -1.8 | -11.1 |
+| ECMWF AIFS ENS (mean) | -2.7 | -11.8 | -3.4 | +3.2 | -0.6 | -9.4 |
 | ECMWF ENS (mean) | +1.2 | -0.4 | +1.4 | +2.6 | +1.8 | -0.9 |
 | NOAA GFS | -11.8 | +2.3 | -9.4 | -21.9 | -16.6 | +0.6 |
 | DWD ICON Global | +4.0 | -3.4 | +3.0 | +3.1 | +2.8 | +9.6 |
@@ -89,6 +92,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | +1.1 | -6.7 | -0.0 | +6.1 | +4.5 | -5.5 |
 | Microsoft Aurora | +0.4 | -5.4 | -2.9 | +3.2 | +4.2 | -2.8 |
 | ECMWF AIFS | -4.0 | -7.7 | -6.2 | -0.7 | +0.2 | -9.5 |
+| ECMWF AIFS ENS (mean) | -0.7 | -12.3 | -1.7 | +6.7 | +1.8 | -8.9 |
 | ECMWF ENS (mean) | +2.3 | -1.7 | +3.1 | +5.3 | +2.9 | -1.5 |
 | NOAA GFS | -12.3 | +0.6 | -10.1 | -21.8 | -16.7 | -0.5 |
 | DWD ICON Global | +2.4 | -4.1 | +1.9 | +1.1 | +1.0 | +8.6 |
@@ -103,6 +107,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | -0.0 (±0.2) | -9.1 (±1.0) | -1.4 (±1.1) | +5.6 (±0.5) | +2.9 (±0.6) | -6.6 (±0.5) |
 | Microsoft Aurora | -0.7 (±0.3) | -6.6 (±1.1) | -3.9 (±1.1) | +1.9 (±0.8) | +2.6 (±0.8) | -3.4 (±0.6) |
 | ECMWF AIFS | -5.4 (±0.3) | -9.8 (±1.2) | -8.0 (±1.3) | -2.1 (±0.6) | -1.4 (±0.8) | -10.6 (±0.6) |
+| ECMWF AIFS ENS (mean) | -2.3 (±0.5) | -12.0 (±1.2) | -3.3 (±1.5) | +3.8 (±0.7) | -0.1 (±0.7) | -9.0 (±0.7) |
 | ECMWF ENS (mean) | +1.4 (±0.2) | -0.9 (±0.7) | +1.5 (±0.6) | +3.1 (±0.4) | +2.1 (±0.4) | -1.0 (±0.2) |
 | NOAA GFS | -11.7 (±0.7) | +1.8 (±1.4) | -9.5 (±1.4) | -21.8 (±1.4) | -16.3 (±1.3) | +0.6 (±0.7) |
 | DWD ICON Global | +3.6 (±0.4) | -4.1 (±1.2) | +2.8 (±1.0) | +2.6 (±0.7) | +2.5 (±0.7) | +9.5 (±1.1) |
@@ -115,6 +120,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | +4.3 (±0.6) | -13.4 (±1.4) | -1.4 (±1.1) | +20.1 (±1.0) | +6.3 (±1.1) | -9.3 (±0.4) |
 | Microsoft Aurora | +0.8 (±0.4) | -18.2 (±2.3) | -8.5 (±2.3) | +13.4 (±1.0) | +5.4 (±1.7) | -7.3 (±1.5) |
 | ECMWF AIFS | -5.9 (±0.6) | -13.2 (±1.7) | -9.5 (±1.5) | -1.0 (±1.0) | -2.2 (±1.1) | -10.7 (±0.6) |
+| ECMWF AIFS ENS (mean) | +3.7 (±0.6) | -19.1 (±2.0) | -5.9 (±1.5) | +24.1 (±0.8) | +6.1 (±1.4) | -12.4 (±0.6) |
 | ECMWF ENS (mean) | +8.7 (±0.3) | -3.5 (±0.8) | +5.8 (±0.4) | +21.2 (±0.5) | +8.7 (±0.9) | -2.7 (±0.2) |
 | NOAA GFS | -17.6 (±0.8) | -11.7 (±2.3) | -18.9 (±2.1) | -23.7 (±1.3) | -19.4 (±0.9) | -8.6 (±0.7) |
 | DWD ICON Global | +1.6 (±0.3) | -2.5 (±1.2) | +0.4 (±1.1) | +0.0 (±0.8) | +0.9 (±0.6) | +7.2 (±0.9) |
@@ -142,6 +148,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | -4.2 | -29.5 | -10.9 | +1.5 | +2.7 | -10.0 |
 | Microsoft Aurora | -4.6 | -23.4 | -9.6 | -0.7 | -0.0 | -7.8 |
 | ECMWF AIFS | -4.5 | -29.7 | -7.9 | -1.0 | +1.2 | -7.5 |
+| ECMWF AIFS ENS (mean) | -4.3 | -27.7 | -6.9 | +0.2 | +1.4 | -10.1 |
 | ECMWF ENS (mean) | -3.0 | -13.5 | -4.4 | -0.1 | -0.8 | -6.7 |
 | NOAA GFS | -27.3 | -31.1 | -33.4 | -30.2 | -19.6 | -24.6 |
 | DWD ICON Global | +5.1 | -4.1 | +1.7 | +4.1 | +7.7 | +10.1 |
@@ -156,6 +163,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | -1.5 | -27.2 | -7.8 | +4.0 | +5.2 | -7.5 |
 | Microsoft Aurora | -2.3 | -22.8 | -7.4 | +2.6 | +2.5 | -7.1 |
 | ECMWF AIFS | -2.5 | -28.7 | -6.1 | +1.1 | +3.3 | -5.2 |
+| ECMWF AIFS ENS (mean) | -1.3 | -26.0 | -4.1 | +3.0 | +4.5 | -6.6 |
 | ECMWF ENS (mean) | -2.6 | -12.7 | -3.9 | +0.1 | -0.5 | -6.3 |
 | NOAA GFS | -24.2 | -27.3 | -29.0 | -26.9 | -17.0 | -22.5 |
 | DWD ICON Global | +6.9 | -3.1 | +3.7 | +5.8 | +9.6 | +11.7 |
@@ -170,6 +178,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | +1.1 | -24.1 | -4.1 | +6.2 | +7.8 | -4.7 |
 | Microsoft Aurora | -1.2 | -22.5 | -6.6 | +4.1 | +4.1 | -7.0 |
 | ECMWF AIFS | -1.7 | -27.5 | -5.0 | +1.6 | +4.9 | -5.0 |
+| ECMWF AIFS ENS (mean) | +0.1 | -25.0 | -3.0 | +4.0 | +6.5 | -5.0 |
 | ECMWF ENS (mean) | -1.9 | -12.3 | -3.4 | +1.1 | +0.3 | -6.0 |
 | NOAA GFS | -24.2 | -26.2 | -26.4 | -27.1 | -18.0 | -23.2 |
 | DWD ICON Global | +6.0 | -4.1 | +4.0 | +4.6 | +9.2 | +10.2 |
@@ -181,9 +190,10 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2.1 Europa | +11.6 | +4.9 | +11.2 | +11.4 | +11.6 | +14.4 |
 | Jua EPT-2 HRRR | +12.2 | +10.3 | +12.3 | +10.2 | +10.9 | +18.4 |
 | Jua EPT-2 Reasoning | +6.0 | -7.3 | +3.6 | +9.3 | +8.8 | +2.2 |
-| Jua EPT-2e | +3.2 | -21.6 | -2.1 | +8.3 | +9.4 | -2.7 |
+| Jua EPT-2e | +3.2 | -21.7 | -2.1 | +8.3 | +9.4 | -2.7 |
 | Microsoft Aurora | +0.2 | -21.5 | -5.7 | +6.3 | +5.3 | -6.7 |
 | ECMWF AIFS | +0.4 | -25.7 | -3.3 | +4.1 | +6.9 | -3.7 |
+| ECMWF AIFS ENS (mean) | +2.2 | -24.0 | -1.1 | +6.6 | +8.3 | -3.3 |
 | ECMWF ENS (mean) | -0.6 | -11.7 | -2.2 | +3.0 | +1.4 | -5.6 |
 | NOAA GFS | -22.3 | -22.1 | -22.2 | -24.8 | -18.1 | -22.6 |
 | DWD ICON Global | +4.0 | -3.7 | +2.2 | +2.3 | +6.4 | +8.8 |
@@ -198,6 +208,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | +0.8 (±0.7) | -24.3 (±3.6) | -5.0 (±2.8) | +6.1 (±0.8) | +7.4 (±1.1) | -5.0 (±0.7) |
 | Microsoft Aurora | -1.3 (±1.0) | -22.2 (±4.4) | -7.0 (±4.6) | +4.1 (±1.0) | +3.8 (±1.6) | -6.9 (±1.0) |
 | ECMWF AIFS | -1.4 (±0.8) | -27.3 (±3.6) | -5.1 (±2.3) | +2.3 (±1.0) | +4.9 (±1.4) | -4.9 (±2.0) |
+| ECMWF AIFS ENS (mean) | +0.2 (±0.6) | -24.9 (±3.2) | -3.1 (±2.0) | +4.5 (±0.9) | +6.2 (±0.9) | -5.1 (±1.7) |
 | ECMWF ENS (mean) | -1.8 (±0.3) | -12.2 (±1.0) | -3.3 (±0.9) | +1.4 (±0.4) | +0.3 (±0.8) | -6.1 (±0.5) |
 | NOAA GFS | -23.8 (±1.4) | -25.3 (±3.5) | -26.3 (±2.9) | -26.5 (±2.5) | -17.8 (±2.1) | -22.8 (±2.0) |
 | DWD ICON Global | +5.5 (±0.9) | -3.8 (±1.2) | +3.0 (±1.7) | +4.1 (±1.5) | +8.3 (±0.9) | +10.2 (±2.0) |
@@ -210,6 +221,7 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Jua EPT-2e | +2.2 (±1.0) | -27.4 (±3.3) | -7.7 (±3.8) | +11.1 (±1.9) | +9.1 (±1.5) | -7.5 (±2.6) |
 | Microsoft Aurora | -3.7 (±0.9) | -35.4 (±4.6) | -16.3 (±4.5) | +10.4 (±2.0) | +0.4 (±4.2) | -17.8 (±3.4) |
 | ECMWF AIFS | -6.6 (±1.0) | -28.9 (±3.0) | -12.7 (±2.3) | -4.7 (±1.4) | -0.6 (±1.8) | -5.9 (±1.5) |
+| ECMWF AIFS ENS (mean) | +0.9 (±1.0) | -34.1 (±3.2) | -10.0 (±3.5) | +12.6 (±1.4) | +7.2 (±2.1) | -11.1 (±1.7) |
 | ECMWF ENS (mean) | +5.5 (±0.5) | -12.5 (±1.1) | +1.3 (±2.3) | +13.6 (±0.9) | +7.5 (±1.5) | -4.8 (±1.9) |
 | NOAA GFS | -24.6 (±1.8) | -27.3 (±2.4) | -27.1 (±2.9) | -24.1 (±2.5) | -20.5 (±2.5) | -27.3 (±1.4) |
 | DWD ICON Global | +1.9 (±0.8) | -7.2 (±1.9) | -1.7 (±2.0) | +1.2 (±1.2) | +4.5 (±1.9) | +5.8 (±2.6) |
@@ -247,6 +259,8 @@ Conventions: skill_pct = 100*(1 - MAE_model/MAE_IFS) (MAE primary; RMSE-based sk
 | Microsoft Aurora | wind | 7/13 |
 | ECMWF AIFS | temp | 5/13 |
 | ECMWF AIFS | wind | 5/13 |
+| ECMWF AIFS ENS (mean) | temp | 5/13 |
+| ECMWF AIFS ENS (mean) | wind | 5/13 |
 | ECMWF ENS (mean) | temp | 1/13 |
 | ECMWF ENS (mean) | wind | 6/13 |
 | NOAA GFS | temp | 0/13 |
@@ -477,17 +491,19 @@ Regimes: all / dry (<0.1 mm) / wet <P50 / P50-75 / P75-95 / >P95 of the ERA5 199
 | Jua EPT-2e | wind | +1.1 | -2.7 |
 | Microsoft Aurora | wind | +1.1 | -2.7 |
 | ECMWF AIFS | wind | +1.1 | -2.8 |
+| ECMWF AIFS ENS (mean) | wind | +1.2 | -2.8 |
 | ECMWF ENS (mean) | wind | +1.1 | -2.6 |
 | NOAA GFS | wind | +0.9 | -2.3 |
 | DWD ICON Global | wind | +1.1 | -2.2 |
 | ECMWF IFS | wind | +1.0 | -2.5 |
-| RANGE (wind) | wind | +0.9 .. +1.1 | -2.8 .. -2.2 |
+| RANGE (wind) | wind | +0.9 .. +1.2 | -2.8 .. -2.2 |
 | Jua EPT-2.1 Europa | temp | +2.3 | -1.2 |
 | Jua EPT-2 HRRR | temp | +2.1 | -1.0 |
 | Jua EPT-2 Reasoning | temp | +2.6 | -1.4 |
 | Jua EPT-2e | temp | +3.0 | -1.5 |
 | Microsoft Aurora | temp | +3.0 | -1.6 |
 | ECMWF AIFS | temp | +3.0 | -1.3 |
+| ECMWF AIFS ENS (mean) | temp | +3.0 | -1.4 |
 | ECMWF ENS (mean) | temp | +2.6 | -1.5 |
 | NOAA GFS | temp | +2.8 | -1.8 |
 | DWD ICON Global | temp | +2.5 | -1.2 |
@@ -517,6 +533,7 @@ Model attribute axes (config/matrix.yaml) joined with pooled gt_q95 skill at h6_
 | Jua EPT-2e | jua | regression | ensemble | global | -6.6 (±0.5) | -5.0 (±0.7) |
 | Microsoft Aurora | external | regression | deterministic | global | -3.4 (±0.6) | -6.9 (±1.0) |
 | ECMWF AIFS | external | regression | deterministic | global | -10.6 (±0.6) | -4.9 (±2.0) |
+| ECMWF AIFS ENS (mean) | external | crps | ensemble | global | -9.0 (±0.7) | -5.1 (±1.7) |
 | ECMWF ENS (mean) | physics | physics | ensemble | global | -1.0 (±0.2) | -6.1 (±0.5) |
 | NOAA GFS | physics | physics | deterministic | global | +0.6 (±0.7) | -22.8 (±2.0) |
 | DWD ICON Global | physics | physics | deterministic | global | +9.5 (±1.1) | +10.2 (±2.0) |

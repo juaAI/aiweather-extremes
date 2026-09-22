@@ -56,6 +56,7 @@ TRACKS = {
             "ept2_e",
             "ept2_reasoning",
             "aifs",
+            "aifs_ens",
             "aurora",
             "ecmwf_ifs_single",
             "noaa_gfs_single",

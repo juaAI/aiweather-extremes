@@ -59,6 +59,7 @@ SHORT = {
     "ept2_e": "EPT-2e",
     "aurora": "Aurora",
     "aifs": "AIFS",
+    "aifs_ens": "AIFS ENS",
     "ecmwf_ens": "ENS",
     "noaa_gfs_single": "GFS",
     "icon_global": "ICON Global",

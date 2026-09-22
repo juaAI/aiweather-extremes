@@ -40,7 +40,9 @@ COUNTRIES = [str(country) for country in CONFIG["countries"]]
 MODEL_ATTRS = CONFIG["models"]
 
 DERIVED_DIR = PROJECT_ROOT / "data" / "derived"
-CACHE_DIR = PROJECT_ROOT / "data" / "cache" / "climatology_metrics_paired_exact_v10"
+# v11: Track A matched set adds aifs_ens (wind/temperature). Track B and solar
+# cells are unchanged from v10.
+CACHE_DIR = PROJECT_ROOT / "data" / "cache" / "climatology_metrics_paired_exact_v11"
 THRESHOLDS_PATH = (
     DERIVED_DIR / "station_climatology_thresholds_era5_1991_2020.parquet"
 )
@@ -73,6 +75,7 @@ TRACK_MODELS = {
         "ept2_e",
         "ept2_reasoning",
         "aifs",
+        "aifs_ens",
         "aurora",
         "ecmwf_ifs_single",
         "noaa_gfs_single",
