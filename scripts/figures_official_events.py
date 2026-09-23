@@ -43,7 +43,7 @@ def _headline(path: Path) -> pl.DataFrame:
     )
 
 
-def _forest_figure(frame: pl.DataFrame, filename: str) -> None:
+def _forest_figure(frame: pl.DataFrame, title: str, filename: str) -> None:
     lookup = {row["model"]: row for row in frame.iter_rows(named=True)}
     event_counts = frame["n_episodes"].unique().to_list()
     sample_counts = frame["n_samples"].unique().to_list()
@@ -84,17 +84,18 @@ def _forest_figure(frame: pl.DataFrame, filename: str) -> None:
             linewidth=1.7,
             zorder=3,
         )
-    for band in np.arange(-0.5, len(models), 2):
-        ax.axhspan(band, band + 1, color="0.96", zorder=0)
+    for index in range(0, len(models), 2):
+        ax.axhspan(index - 0.5, index + 0.5, color="0.96", zorder=0)
     ax.axvline(0, color="black", linewidth=0.9, linestyle=":")
     ax.set_xlim(lower - padding, upper + padding)
     ax.set_xlabel("MAE skill relative to ECMWF IFS (%)")
     ax.set_yticks(y)
     ax.set_yticklabels([DISPLAY.get(model, model) for model in models])
-    ax.invert_yaxis()
+    ax.set_ylim(len(models) - 0.5, -0.5)
     ax.grid(axis="x", alpha=0.25)
     ax.grid(axis="y", visible=False)
-    fig.subplots_adjust(left=0.34, right=0.98, top=0.98, bottom=0.16)
+    ax.set_title(title, fontsize=11, pad=9)
+    fig.subplots_adjust(left=0.34, right=0.98, top=0.90, bottom=0.16)
     path = FIGURES / filename
     fig.savefig(path, dpi=SAVE_DPI, bbox_inches="tight")
     plt.close(fig)
@@ -104,10 +105,12 @@ def _forest_figure(frame: pl.DataFrame, filename: str) -> None:
 def pooled_figures() -> None:
     _forest_figure(
         _headline(TEMP_SKILL),
+        "Documented European temperature-record events",
         "appF_official_temperature_event_skill.png",
     )
     _forest_figure(
         _headline(WIND_SKILL),
+        "Documented European windstorms",
         "appF_official_wind_event_skill.png",
     )
 
