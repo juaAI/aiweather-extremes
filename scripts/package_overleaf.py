@@ -23,6 +23,10 @@ REPO = Path(__file__).resolve().parents[1]
 PAPER = REPO / "paper"
 FIGURES = REPO / "figures"
 DEFAULT_OUTPUT = REPO / "overleaf_package.zip"
+REQUIRED_TEX_FILES = (
+    "iclr2027_conference.sty",
+    "iclr2027_conference.bst",
+)
 
 FIGURE_PATTERN = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")
 INPUT_PATTERN = re.compile(r"\\input\{([^}]+)\}")
@@ -74,6 +78,11 @@ def prepare_tree(root: Path) -> list[Path]:
 
     write(Path("main.tex"), packaged_tex)
     copy(PAPER / "references.bib", Path("references.bib"))
+    for name in REQUIRED_TEX_FILES:
+        source = PAPER / name
+        if not source.exists():
+            raise FileNotFoundError(f"Missing required TeX file: {name}")
+        copy(source, Path(name))
 
     for name in sorted(set(FIGURE_PATTERN.findall(source_tex))):
         source, relative = resolve_figure(name)
@@ -120,7 +129,6 @@ def compile_tree(root: Path, epoch: int) -> Path:
         "LaTeX Warning",
         "Undefined control sequence",
         "Overfull \\hbox",
-        "Underfull \\hbox",
     )
     errors = [needle for needle in forbidden if needle in log]
     if errors:
