@@ -1,0 +1,118 @@
+temperature:
+  - id: temp_dec2025
+    name: Central European December record warmth
+    start: "2025-12-07"
+    end: "2025-12-09"
+    countries: [NL, CZ]
+    basis: National daily temperature records reported from KNMI and CHMI networks.
+    sources:
+      - https://particle.news/story/netherlands-breaks-december-9-temperature-records-as-unseasonable-warmth-continues
+      - https://czechdaily.cz/warm-like-spring-december-breaks-temperature-records-across-the-czech-republic/
+
+  - id: temp_feb2026
+    name: Late-February European record warmth
+    start: "2026-02-25"
+    end: "2026-02-27"
+    countries: [FR, DE, ES, CZ]
+    basis: Monthly station records reported by Meteo-France and national observations.
+    sources:
+      - https://www.connexionfrance.com/news/france-heat-130-records-set-on-february-25-will-it-continue/773211
+      - https://www.fnp.de/deutschland/116-jahres-rekord-pulverisiert-ausnahme-wetter-im-februar-zr-94189884.html
+
+  - id: temp_apr2026
+    name: Early-April record warm spell
+    start: "2026-04-05"
+    end: "2026-04-08"
+    countries: [FR, GB]
+    basis: Record April warmth reported by Meteo-France and the UK Met Office.
+    sources:
+      - https://www.connexionfrance.com/news/france-basks-in-record-breaking-spring-heat/782762
+      - https://www.manchestereveningnews.co.uk/news/uk-news/uk-hits-record-breaking-temperatures-33736197
+
+  - id: temp_may2026
+    name: Western European May heatwave
+    start: "2026-05-21"
+    end: "2026-05-30"
+    countries: [FR, GB]
+    basis: Copernicus event window; national and local May records confirmed by national services.
+    sources:
+      - https://climate.copernicus.eu/what-do-we-know-about-europes-early-and-intense-heatwave-in-may-2026
+
+  - id: temp_jun2026
+    name: Late-June European record heatwave
+    start: "2026-06-21"
+    end: "2026-06-28"
+    countries: [DE, FR, GB, ES, PL, NL, CH, AT, CZ, DK]
+    basis: WMO/JMA/Copernicus reports of national, all-time, June, and station records.
+    sources:
+      - https://www.data.jma.go.jp/tcc/data/news/press_20260713.pdf
+      - https://public.wmo.int/media/news/western-europe-has-hottest-june-record
+      - https://climate.copernicus.eu/intense-heatwave-brings-hottest-june-western-europe-month-ranks-second-warmest-globally
+
+wind:
+  - id: wind_sep2025
+    name: North Sea autumn storm
+    start: "2025-09-15"
+    end: "2025-09-16"
+    countries: [NL]
+    basis: Official storm classification and observations reported by KNMI.
+    sources:
+      - https://nos.nl/artikel/2582654-windkracht-9-in-ijmuiden-eerste-herfststorm-is-een-feit
+
+  - id: wind_amy2025
+    name: Storm Amy
+    start: "2025-10-03"
+    end: "2025-10-05"
+    countries: [GB, FR, BE, NL, "NO", DK, PL]
+    basis: Official Met Office storm report and documented European impacts.
+    sources:
+      - https://www.metoffice.gov.uk/binaries/content/assets/metofficegovuk/pdf/weather/learn-about/uk-past-events/interesting/2025/2025_05_storm_amy_2.pdf
+      - https://apnews.com/article/storm-amy-disruption-uk-ireland-scandinavia-aae0b98b2b37883e8dccacf6fb4aef3b
+
+  - id: wind_benjamin2025
+    name: Storm Benjamin
+    start: "2025-10-23"
+    end: "2025-10-24"
+    countries: [FR, NL, CH, GB]
+    basis: Official KNMI warning period and Meteo-France record-wind reports.
+    sources:
+      - https://www.knmi.nl/kennis-en-datacentrum/achtergrond/code-oranje-voor-storm-benjamin-op-23-en-24-oktober-2025
+      - https://www.connexionfrance.com/news/most-french-departments-on-alert-as-storm-benjamin-arrives/750134
+
+  - id: wind_goretti2026
+    name: Storm Goretti
+    start: "2026-01-08"
+    end: "2026-01-09"
+    countries: [GB, FR, DE, NL]
+    basis: Official Met Office storm report and national meteorological warnings.
+    sources:
+      - https://www.metoffice.gov.uk/api/assets/file/2026_02_storm_gorettipdf?prefix=assets
+      - https://www.reuters.com/business/environment/widespread-power-cuts-travel-disrupted-storm-goretti-hammers-northern-europe-2026-01-09/
+
+  - id: wind_nils2026
+    name: Storm Nils
+    start: "2026-02-11"
+    end: "2026-02-13"
+    countries: [FR, ES]
+    basis: Official warnings and documented damaging wind footprint.
+    sources:
+      - https://www.climameter.org/20260211-storm-nils
+      - https://www.euronews.com/2026/02/13/storm-nils-caused-deaths-major-flooding-and-mass-power-cuts-in-france
+
+  - id: wind_marlis2026
+    name: Storm Marlis
+    start: "2026-03-25"
+    end: "2026-03-26"
+    countries: [CH, DE]
+    basis: Swiss storm archive observations and documented storm period.
+    sources:
+      - https://sturmarchiv.ch/index.php?title=20260325_01_Storm_Alpennordseite
+
+  - id: wind_deborah2026
+    name: Storm Deborah
+    start: "2026-03-26"
+    end: "2026-03-27"
+    countries: [FR, IT]
+    basis: Documented damaging-wind period in southeastern France and Italy.
+    sources:
+      - https://www.connexionfrance.com/news/winds-over-150kmh-cause-damage-across-south-east-france/781014

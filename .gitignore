@@ -23,6 +23,10 @@ data/derived/station_climatology_thresholds_era5_1991_2020.parquet
 data/derived/station_precip_thresholds_era5_1991_2020.parquet
 data/derived/era5_grid_europe.parquet
 data/derived/precip_station_era5_weights.parquet
+# Event footprints contain station identifiers and are regenerated from the
+# source-provenance catalogue. Compact station-free aggregates remain tracked.
+data/derived/official_temperature_event_footprints.parquet
+data/derived/official_wind_event_footprints.parquet
 paper/*.aux
 paper/*.log
 paper/*.bbl
