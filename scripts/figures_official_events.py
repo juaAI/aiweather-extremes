@@ -43,7 +43,7 @@ def _headline(path: Path) -> pl.DataFrame:
     )
 
 
-def _forest_figure(frame: pl.DataFrame, title: str, filename: str) -> None:
+def _forest_figure(frame: pl.DataFrame, filename: str) -> None:
     lookup = {row["model"]: row for row in frame.iter_rows(named=True)}
     event_counts = frame["n_episodes"].unique().to_list()
     sample_counts = frame["n_samples"].unique().to_list()
@@ -66,7 +66,7 @@ def _forest_figure(frame: pl.DataFrame, title: str, filename: str) -> None:
     lower = min(-5.0, min(finite_bounds))
     upper = max(5.0, max(finite_bounds))
     padding = 0.08 * (upper - lower)
-    fig, ax = plt.subplots(figsize=(7.4, 4.9))
+    fig, ax = plt.subplots(figsize=(7.4, 4.3))
     y = np.arange(len(models))
     for index, model in enumerate(models):
         row = lookup[model]
@@ -94,13 +94,7 @@ def _forest_figure(frame: pl.DataFrame, title: str, filename: str) -> None:
     ax.invert_yaxis()
     ax.grid(axis="x", alpha=0.25)
     ax.grid(axis="y", visible=False)
-    ax.set_title(
-        title
-        + "\n"
-        + f"{event_counts[0]} events; n={sample_counts[0]:,} common samples; "
-        + "6\u201348 h, debiased"
-    )
-    fig.subplots_adjust(left=0.34, right=0.98, top=0.83, bottom=0.14)
+    fig.subplots_adjust(left=0.34, right=0.98, top=0.98, bottom=0.16)
     path = FIGURES / filename
     fig.savefig(path, dpi=SAVE_DPI, bbox_inches="tight")
     plt.close(fig)
@@ -110,12 +104,10 @@ def _forest_figure(frame: pl.DataFrame, title: str, filename: str) -> None:
 def pooled_figures() -> None:
     _forest_figure(
         _headline(TEMP_SKILL),
-        "Skill during documented record-temperature events",
         "appF_official_temperature_event_skill.png",
     )
     _forest_figure(
         _headline(WIND_SKILL),
-        "Skill during documented European windstorms",
         "appF_official_wind_event_skill.png",
     )
 
