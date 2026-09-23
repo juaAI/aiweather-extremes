@@ -902,4 +902,56 @@ panel.}
 \end{figure}
 
 \FloatBarrier
+\subsection{Source-defined event case studies}
+\label{app:officialevents}
+
+Table~\ref{tab:officialeventcatalog} lists the externally documented
+record-temperature events and European windstorms used for the case-study
+analysis. Event dates and affected countries are fixed from the source
+catalogue before forecast scoring. Within each footprint, forecasts are
+retained only where every Track~A model and ECMWF IFS share the same
+station, valid time, initialisation, and lead; ensemble systems are
+evaluated through their means and the same causal bias correction as in
+the main analysis is applied.
+
+\begin{table}[htbp]
+\centering
+\caption{Source-defined event catalogue. The accompanying reproduction
+package records the source URLs and selection basis for every event.}
+\label{tab:officialeventcatalog}
+\numtable{\resizebox{\textwidth}{!}{
+\input{tables/t_official_event_catalog.tex}}}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{appF_official_temperature_event_skill.png}
+\caption{MAE skill relative to ECMWF IFS over the source-defined
+record-temperature event footprints, aggregated over 6--48\,h after bias
+correction. Every model is evaluated on the same five events, eight leads,
+and 231{,}065 station/valid-time/lead samples. Error bars show one
+leave-one-event-out jackknife SE.}
+\label{fig:officialtempeventskill}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{appF_official_wind_event_skill.png}
+\caption{As Figure~\ref{fig:officialtempeventskill}, for the seven
+externally documented European windstorms. Every model is evaluated on the
+same eight leads and 123{,}847 station/valid-time/lead samples.}
+\label{fig:officialwindeventskill}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Event-case MAE skill (\%) relative to ECMWF IFS. Parentheses give
+leave-one-event-out jackknife SE. Temperature uses five events and 231{,}065
+common samples; wind uses seven events and 123{,}847 common samples.}
+\label{tab:officialeventskill}
+\numtable{\resizebox{\textwidth}{!}{
+\input{tables/t_official_event_skill.tex}}}
+\end{table}
+
+\FloatBarrier
 \end{document}
