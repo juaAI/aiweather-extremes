@@ -32,3 +32,5 @@ paper/*.log
 paper/*.bbl
 paper/*.blg
 .DS_Store
+# OpenReview upload folder, rebuilt by scripts/package_supplement.py.
+submission/

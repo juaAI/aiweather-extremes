@@ -509,23 +509,24 @@ probabilities.
 All authors are affiliated with Jua.ai AG, which develops several of the
 forecast systems evaluated in this study.
 \else
-Several of the forecast systems evaluated in this study are developed by the
-authors' organisation.
+The authors have a competing interest with respect to some of the evaluated
+forecast systems; details are withheld for anonymity and will be disclosed in
+the final version.
 \fi
 The verification protocol is applied identically across AI and physical
 systems, every comparison is reported against the independent ECMWF IFS
-reference, and the archived requests, aggregates and reproduction code
-described below are provided to support independent scrutiny of the
-comparisons. The study uses forecast output and meteorological station
+reference, and the aggregates and reproduction code described below are
+provided to support independent scrutiny of the comparisons. The study uses forecast output and meteorological station
 observations only; it involves no human subjects or personal data, and no
 station identities or per-station series are released.
 
 \subsubsection*{Reproducibility statement}
 Metrics were computed through a content-addressed station-verification API;
 requests and responses are archived. The reproduction package includes the
-aggregates used for the reported numbers, headline skill tables, and the
-extraction, aggregation and figure code. All score-based figures and tables
-regenerate offline from those aggregates.
+configuration files, the derived aggregates behind every reported number, and
+the extraction, scoring, aggregation and figure code. All score-based figures
+and tables regenerate offline from those aggregates; station-level
+observations and raw forecast fields are not redistributed.
 \ificlrfinal
 The package is at \url{https://github.com/juaAI/aiweather-extremes}, and
 the forecast fields used in the evaluation are available via the Jua
@@ -536,14 +537,15 @@ The package is provided as anonymised supplementary material.
 
 \subsubsection*{AI use statement}
 
-Generative AI tools were used to support research ideation and execution,
-including software changes to the extraction, aggregation, and figure code;
-to retrieve and discover related work; and to draft and polish manuscript
-text. They were not used to generate or modify observations, forecast data,
-or synthetic datasets, or to prove mathematical claims. The authors reviewed
-all AI-assisted code and text, verified the reported numbers against the
-aggregate data, regenerated the artifacts, and take full responsibility for
-the content.
+Generative AI tools were used to review and refine the experimental
+methodology, including the event-selection and sample-matching protocol; to
+implement extraction, scoring, aggregation, and figure code; to inspect and
+interpret generated results; to search and summarise related literature; and
+to draft and edit manuscript text. They were not used to generate or modify
+observations, forecast data, or synthetic datasets, or to prove mathematical
+claims. The authors reviewed and tested all AI-assisted code, verified the
+reported numbers against the aggregate data, regenerated the artifacts, and
+take full responsibility for the final content.
 
 \bibliography{references}
 \bibliographystyle{iclr2027_conference}
@@ -671,7 +673,7 @@ regime, \(y\geq\mathrm{P95}\). Shading denotes \(\pm1\) jackknife SE.}
 \centering
 \includegraphics[width=\textwidth]{fig2_skill_vs_lead_temp.png}
 \caption{Track A MAE skill relative to ECMWF IFS by lead time for 2\,m temperature.
-The left panel shows all conditions; the right panel shows the gale-force
+The left panel shows all conditions; the right panel shows the heat
 regime, \(y\geq\mathrm{P95}\). Shading denotes \(\pm1\) jackknife SE.}
 \label{fig:leadtemp}
 \end{figure}

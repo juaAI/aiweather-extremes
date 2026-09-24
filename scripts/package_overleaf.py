@@ -102,8 +102,8 @@ def prepare_tree(root: Path) -> list[Path]:
 3. Compiler: pdfLaTeX (Overleaf default).
 4. Bibliography: references.bib; BibTeX runs automatically.
 
-The figures and table fragments are generated artifacts from:
-https://github.com/juaAI/aiweather-extremes
+NOT FOR REVIEWER UPLOAD: main.tex contains the camera-ready author block.
+Use supplementary_material.zip (scripts/package_supplement.py) instead.
 """
     write(Path("README.txt"), readme)
     return sorted(files)
