@@ -47,12 +47,15 @@ REDACTIONS = (
     ('"http://localhost:8080"', '""'),
     ('"localdevkey:localdevsecret"', '""'),
     ("Jua's synoptic network", "the platform's synoptic network"),
+    ("JUA_API_BASE", "VERIFICATION_API_BASE"),
+    ("JUA_API_KEY", "VERIFICATION_API_KEY"),
+    ("Jua API access", "verification API access"),
 )
 
 FORBIDDEN = re.compile(
     r"molinaro|gabler|siegenheim|henry martin|mark frey|poulsen|seitz|"
-    r"olivier lam|jua\.ai|juaai|research@|github\.com|/users/|localhost|"
-    r"localdev",
+    r"olivier lam|jua\.ai|juaai|jua_api|jua api|jua platform|research@|"
+    r"github\.com|/users/|localhost|localdev",
     re.IGNORECASE,
 )
 FIGURE_PATTERN = re.compile(r"\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}")
